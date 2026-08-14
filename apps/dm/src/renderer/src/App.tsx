@@ -23,7 +23,7 @@ const TABS: readonly { readonly value: Tab; readonly label: string }[] = [
  * mesma cena.
  */
 export function App(): JSX.Element {
-  const [tab, setTab] = useState<Tab>('bestiary');
+  const [tab, setTab] = useState<Tab>('session');
   // Pilha de dois níveis só dentro da aba de iniciativa: lista de encontros,
   // ou um encontro aberto. Não é o modelo de navegação do app do jogador —
   // aqui é só uma tela indo e voltando, não vale a pena por uma pilha de verdade.

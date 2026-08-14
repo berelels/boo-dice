@@ -295,6 +295,36 @@
   gap: var(--space-3);
 }
 
+/* Barra compacta com a sessão já no ar — o código/QR completos (`.session__join`
+   logo abaixo) só voltam a ocupar espaço quando o mestre pedir. */
+.session__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.session__bar-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.session__bar-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: var(--radius-pill);
+  background: var(--success);
+  flex-shrink: 0;
+}
+
+.session__bar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .session__error {
   margin-top: var(--space-3);
   color: var(--danger);

@@ -8,9 +8,12 @@ import { OracleCard } from './Oracle.js';
 import { PlayerSheet } from './PlayerSheet.js';
 
 /**
- * Painel de sessão: liga o servidor de LAN, mostra o código e o QR pra o
- * jogador entrar, e a lista de grupo ao vivo — PV/CA/condições de cada
- * personagem trazido, atualizando sozinha via `onPartyUpdate`.
+ * Painel de sessão — a tela que o app abre por padrão, já que é onde a mesa
+ * passa a maior parte do tempo. Liga o servidor de LAN (código/QR pra
+ * entrar, escondido depois que a galera já entrou), e a lista de grupo ao
+ * vivo — PV/CA/condições de cada personagem trazido — vem em primeiro lugar,
+ * porque é o que o mestre acompanha o tempo todo, atualizando sozinha via
+ * `onPartyUpdate`.
  *
  * Direção única nesta rodada: só o jogador manda dado pra cá. Não existe
  * botão de "empurrar" nada de volta pro celular.
@@ -22,6 +25,10 @@ export function SessionScreen(): JSX.Element {
   const [party, setParty] = useState<PartySnapshot>({ players: [] });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Fechado por padrão: uma vez que a galera já entrou, o código/QR só
+  // ocupam espaço que o grupo (o que o mestre olha o tempo todo) merece mais.
+  // `start()` abre de novo sozinho, porque é exatamente quando ele faz falta.
+  const [showJoinInfo, setShowJoinInfo] = useState(false);
   // Só a identidade, não a ficha em si — assim a ficha aberta sempre reflete
   // o último push do grupo, em vez de congelar no que chegou no toque.
   const [openCharacter, setOpenCharacter] = useState<{ playerName: string; characterId: string } | null>(
@@ -65,6 +72,7 @@ export function SessionScreen(): JSX.Element {
       const status = await dm.session.start();
       setSession(status);
       setSelectedAddress(status.addresses[0] ?? null);
+      setShowJoinInfo(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Não foi possível iniciar a sessão.');
     } finally {
@@ -91,55 +99,67 @@ export function SessionScreen(): JSX.Element {
 
   return (
     <div className="session">
-      <Card>
-        <div className="session__control">
-          <div>
-            <div className="dfo-headline">{session ? 'Sessão no ar' : 'Sessão parada'}</div>
-            <div className="dfo-caption">
-              {session
-                ? 'Jogadores na mesma rede podem entrar agora.'
-                : 'Inicie pra gerar o código e liberar a conexão em LAN.'}
+      {!session ? (
+        <Card>
+          <div className="session__control">
+            <div>
+              <div className="dfo-headline">Sessão parada</div>
+              <div className="dfo-caption">Inicie pra gerar o código e liberar a conexão em LAN.</div>
             </div>
+            <Button variant="primary" disabled={busy} onTap={() => void start()}>
+              Iniciar sessão
+            </Button>
           </div>
-          <Button
-            variant={session ? 'danger' : 'primary'}
-            disabled={busy}
-            onTap={() => void (session ? stop() : start())}
-          >
-            {session ? 'Parar sessão' : 'Iniciar sessão'}
-          </Button>
-        </div>
 
-        {error && <div className="session__error">{error}</div>}
-
-        {session && (
-          <div className="session__join">
-            <div className="session__code">{session.code}</div>
-
-            {session.addresses.length > 1 && (
-              <div className="session__addresses">
-                {session.addresses.map((address) => (
-                  <Chip
-                    key={address}
-                    tone={address === selectedAddress ? 'accent' : 'neutral'}
-                    onTap={() => setSelectedAddress(address)}
-                  >
-                    {address}
-                  </Chip>
-                ))}
+          {error && <div className="session__error">{error}</div>}
+        </Card>
+      ) : (
+        <Card>
+          <div className="session__bar">
+            <div className="session__bar-status">
+              <span className="session__bar-dot" aria-hidden="true" />
+              <div>
+                <div className="dfo-headline">Sessão no ar</div>
+                <div className="dfo-caption">Código {session.code}</div>
               </div>
-            )}
-
-            <div className="dfo-caption">
-              {selectedAddress ? `${selectedAddress}:${session.port}` : 'Nenhum endereço de LAN encontrado'}
             </div>
-
-            <canvas ref={canvasRef} className="session__qr" />
+            <div className="session__bar-actions">
+              <Button variant="ghost" onTap={() => setShowJoinInfo((current) => !current)}>
+                {showJoinInfo ? 'Ocultar código' : 'Mostrar código'}
+              </Button>
+              <Button variant="danger" disabled={busy} onTap={() => void stop()}>
+                Parar sessão
+              </Button>
+            </div>
           </div>
-        )}
-      </Card>
 
-      <OracleCard />
+          {showJoinInfo && (
+            <div className="session__join">
+              <div className="session__code">{session.code}</div>
+
+              {session.addresses.length > 1 && (
+                <div className="session__addresses">
+                  {session.addresses.map((address) => (
+                    <Chip
+                      key={address}
+                      tone={address === selectedAddress ? 'accent' : 'neutral'}
+                      onTap={() => setSelectedAddress(address)}
+                    >
+                      {address}
+                    </Chip>
+                  ))}
+                </div>
+              )}
+
+              <div className="dfo-caption">
+                {selectedAddress ? `${selectedAddress}:${session.port}` : 'Nenhum endereço de LAN encontrado'}
+              </div>
+
+              <canvas ref={canvasRef} className="session__qr" />
+            </div>
+          )}
+        </Card>
+      )}
 
       <div className="session__party">
         <div className="dfo-overline">Grupo</div>
@@ -192,6 +212,8 @@ export function SessionScreen(): JSX.Element {
           </Card>
         ))}
       </div>
+
+      <OracleCard />
 
       <PlayerSheet
         playerName={openCharacter?.playerName ?? null}
