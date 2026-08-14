@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "Boo & Dice — app do mestre (Electron, Linux e Windows).",
-  "author": "Grupo Hermes",
+  "author": "Gabriel Dias",
   "type": "module",
   "main": "./out/main/index.js",
   "scripts": {

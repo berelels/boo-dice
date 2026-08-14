@@ -1,4 +1,4 @@
-appId: com.grupohermes.dfo.dm
+appId: io.github.berelels.boodice.dm
 productName: Boo & Dice — Mestre
 # O nome do pacote no npm (`@dfo/dm`) tem caracteres que não servem de nome
 # de arquivo (`@`, `/`) — o electron-builder usaria isso por padrão pro

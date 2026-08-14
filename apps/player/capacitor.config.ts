@@ -8,7 +8,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  * `appName` (o que aparece na tela do aparelho) segue o nome novo.
  */
 const config: CapacitorConfig = {
-  appId: 'com.grupohermes.dfo',
+  appId: 'io.github.berelels.boodice',
   appName: 'Boo & Dice',
   webDir: 'dist',
 
