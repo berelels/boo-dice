@@ -90,6 +90,26 @@ A assinatura do APK usa uma chave guardada em `~/.keystores/boo-dice/`,
 fora do repositório. Sem ela, `gradlew assembleRelease` gera um APK sem
 assinatura de release.
 
+### Se `apps/player/android/` for regenerado
+
+O diretório é gerado (`npx cap add android`) e está no `.gitignore` —
+regenerá-lo (por exemplo, pra trocar `applicationId`) apaga edições manuais.
+Depois de regenerar, reaplique à mão:
+
+- `signingConfigs.release` em `android/app/build.gradle` (lê
+  `~/.keystores/boo-dice/keystore.properties`).
+- Em `android/app/src/main/AndroidManifest.xml`: `<uses-permission
+  android:name="android.permission.CAMERA" />` antes de `<application>`, e
+  `<meta-data android:name="com.google.mlkit.vision.DEPENDENCIES"
+  android:value="barcode_ui" />` dentro dela — exigidos pelo
+  `@capacitor-mlkit/barcode-scanning` (leitor de QR da tela "Entrar em
+  sessão"). Sem isso o app nunca consegue nem pedir a permissão de câmera ao
+  Android, e o scan falha sempre, silenciosamente.
+- `android/local.properties` com `sdk.dir=$HOME/Android/Sdk`.
+
+Rode `npx cap sync android` de novo depois de qualquer rebuild do `dist/`
+(a cópia dos bancos pra dentro do projeto nativo não é automática).
+
 ## Duas armadilhas documentadas no código
 
 **`PRAGMA journal_mode = WAL` é persistente.** Ele é gravado nos bytes 18/19 do
