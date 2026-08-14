@@ -7,7 +7,16 @@ import { basename, extname } from 'node:path';
 // configurado), o próprio pdf.js detecta o ambiente Node e roda a extração
 // na mesma thread, sem precisar de nenhuma opção extra pra isso.
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
-import { CATALOG_REBUILD, CATALOG_SCHEMA } from '@dfo/core';
+import {
+  buildPdfCatalogRows,
+  CATALOG_REBUILD,
+  CATALOG_SCHEMA,
+  chunkText,
+  slugifyBookId,
+  type PdfCatalogRow,
+} from '@dfo/core';
+
+export { chunkText };
 
 /**
  * Indexação de PDFs do mestre — a base de busca do Oráculo.
@@ -19,8 +28,6 @@ import { CATALOG_REBUILD, CATALOG_SCHEMA } from '@dfo/core';
  * máquina do mestre.
  */
 
-const MAX_CHUNK_LENGTH = 1500;
-
 export interface ImportedPdf {
   readonly id: string;
   readonly title: string;
@@ -30,40 +37,18 @@ export interface ImportedPdf {
   readonly importedAt: string;
 }
 
-interface CatalogRow {
-  readonly id: string;
-  readonly kind: 'rule';
-  readonly title: string;
-  readonly subtitle: string;
-  readonly body: string;
-  readonly section: string;
-  readonly lang: 'pt';
-  readonly data: { readonly source: string; readonly page: number };
-}
-
 export async function importPdf(catalogPath: string, filePath: string): Promise<ImportedPdf> {
   const buffer = await readFile(filePath);
   const doc = await getDocument({ data: new Uint8Array(buffer) }).promise;
 
   const title = basename(filePath, extname(filePath));
-  const bookId = slugify(title);
+  const bookId = slugifyBookId(title);
 
-  const entries: CatalogRow[] = [];
+  const pageTexts: string[] = [];
   for (let page = 1; page <= doc.numPages; page += 1) {
-    const pageText = await extractPageText(doc, page);
-    for (const [index, chunk] of chunkText(pageText).entries()) {
-      entries.push({
-        id: `pdf:${bookId}:${page}-${index}`,
-        kind: 'rule',
-        title: `${title} — p. ${page}`,
-        subtitle: title,
-        body: chunk,
-        section: title,
-        lang: 'pt',
-        data: { source: bookId, page },
-      });
-    }
+    pageTexts.push(await extractPageText(doc, page));
   }
+  const entries = buildPdfCatalogRows(bookId, title, pageTexts);
 
   writeEntries(catalogPath, bookId, entries);
 
@@ -105,41 +90,12 @@ async function extractPageText(
 }
 
 /**
- * Agrupa parágrafos até `MAX_CHUNK_LENGTH` — sem cabeçalho pra guiar o corte
- * (PDF não tem `<h2>`), a página é a unidade natural, e isto só existe pra
- * não deixar uma página excepcionalmente densa virar um verbete gigante.
- */
-export function chunkText(pageText: string, maxLength = MAX_CHUNK_LENGTH): string[] {
-  const paragraphs = pageText
-    .split(/\n+/)
-    .map((paragraph) => paragraph.replace(/[ \t]+/g, ' ').trim())
-    .filter((paragraph) => paragraph.length > 0);
-
-  const chunks: string[] = [];
-  let buffer: string[] = [];
-  let length = 0;
-
-  for (const paragraph of paragraphs) {
-    if (length > 0 && length + paragraph.length > maxLength) {
-      chunks.push(buffer.join('\n\n'));
-      buffer = [];
-      length = 0;
-    }
-    buffer.push(paragraph);
-    length += paragraph.length;
-  }
-  if (buffer.length > 0) chunks.push(buffer.join('\n\n'));
-
-  return chunks;
-}
-
-/**
  * Grava direto com `better-sqlite3`, sem passar pelo `CatalogWriter` do
  * pipeline de build — aquele é uma ferramenta de desenvolvedor (lê HTML,
  * roda por `npm run data:book`); isto aqui roda dentro do app empacotado, a
  * partir de um PDF que o mestre escolheu na hora.
  */
-function writeEntries(catalogPath: string, bookId: string, entries: readonly CatalogRow[]): void {
+function writeEntries(catalogPath: string, bookId: string, entries: readonly PdfCatalogRow[]): void {
   const db = new Database(catalogPath);
   try {
     db.pragma('journal_mode = MEMORY');
@@ -152,7 +108,7 @@ function writeEntries(catalogPath: string, bookId: string, entries: readonly Cat
       INSERT INTO catalog (id, kind, title, subtitle, body, section, lang, data)
       VALUES (@id, @kind, @title, @subtitle, @body, @section, @lang, @data)
     `);
-    const insertMany = db.transaction((rows: readonly CatalogRow[]) => {
+    const insertMany = db.transaction((rows: readonly PdfCatalogRow[]) => {
       for (const row of rows) {
         insert.run({
           id: row.id,
@@ -177,13 +133,4 @@ function writeEntries(catalogPath: string, bookId: string, entries: readonly Cat
   } finally {
     db.close();
   }
-}
-
-function slugify(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
 }

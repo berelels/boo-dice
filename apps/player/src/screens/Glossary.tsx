@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CATALOG_KIND_LABELS, type CatalogEntry, type CatalogKind, type SearchHit } from '@dfo/core';
-import { BottomSheet, Card, Chip, EmptyState, Screen, Tappable, TopBar } from '@dfo/ui';
+import { BottomSheet, Button, Card, Chip, EmptyState, Screen, Tappable, TopBar } from '@dfo/ui';
 import { useAppData, useLibraryCounts } from '../db/provider.js';
+import type { ImportedPdf } from '../state/pdfImport.js';
 
 /**
  * Glossário.
@@ -24,7 +25,7 @@ const FILTERS: readonly { readonly value: CatalogKind | 'all'; readonly label: s
 ];
 
 export function GlossaryScreen({ onBack }: { onBack: () => void }): JSX.Element {
-  const { library } = useAppData();
+  const { library, pdfs } = useAppData();
   const counts = useLibraryCounts();
 
   const [query, setQuery] = useState('');
@@ -32,7 +33,40 @@ export function GlossaryScreen({ onBack }: { onBack: () => void }): JSX.Element 
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [selected, setSelected] = useState<CatalogEntry | null>(null);
   const [searching, setSearching] = useState(false);
+  const [pdfList, setPdfList] = useState<readonly ImportedPdf[] | null>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfMessage, setPdfMessage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const refreshPdfs = (): void => {
+    void pdfs.list().then(setPdfList);
+  };
+
+  useEffect(refreshPdfs, [pdfs]);
+
+  const importPdf = async (file: File): Promise<void> => {
+    setPdfBusy(true);
+    setPdfMessage(null);
+    try {
+      await pdfs.import(file);
+      refreshPdfs();
+    } catch (error) {
+      setPdfMessage(error instanceof Error ? error.message : 'Não consegui importar esse PDF.');
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
+  const removePdf = async (id: string): Promise<void> => {
+    setPdfBusy(true);
+    try {
+      await pdfs.remove(id);
+      refreshPdfs();
+    } finally {
+      setPdfBusy(false);
+    }
+  };
 
   const total = useMemo(
     () => (counts ? Object.values(counts).reduce((sum, value) => sum + value, 0) : 0),
@@ -92,6 +126,52 @@ export function GlossaryScreen({ onBack }: { onBack: () => void }): JSX.Element 
         />
       </div>
 
+      <Card className="glossary__pdfs">
+        {pdfBusy ? (
+          <p className="dfo-caption">Processando…</p>
+        ) : (
+          <>
+            {pdfList && pdfList.length > 0 && (
+              <ul className="glossary__pdf-list">
+                {pdfList.map((pdf) => (
+                  <li key={pdf.id} className="glossary__pdf-row">
+                    <div>
+                      <div className="dfo-headline">{pdf.title}</div>
+                      <span className="dfo-caption">
+                        {pdf.pages} {pdf.pages === 1 ? 'página' : 'páginas'} · {pdf.chunks}{' '}
+                        {pdf.chunks === 1 ? 'verbete' : 'verbetes'}
+                      </span>
+                    </div>
+                    <Button variant="ghost" onTap={() => void removePdf(pdf.id)}>
+                      Remover
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="dfo-caption">
+              Importe o PDF do seu livro pra ter as regras completas em português — tudo
+              processado no aparelho, nada é enviado pra lugar nenhum.
+            </p>
+            <Button variant="ghost" onTap={() => fileInputRef.current?.click()}>
+              Importar PDF
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              className="file-input--hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (file) void importPdf(file);
+              }}
+            />
+          </>
+        )}
+        {pdfMessage && <p className="dfo-caption form-message form-message--error">{pdfMessage}</p>}
+      </Card>
+
       <div className="dfo-scroll-x glossary__filters">
         {FILTERS.map((filter) => (
           <Tappable
@@ -108,7 +188,7 @@ export function GlossaryScreen({ onBack }: { onBack: () => void }): JSX.Element 
       {!library.hasContent && (
         <EmptyState
           title="Nenhum acervo carregado"
-          description="Rode “npm run data” para baixar o SRD, e “npm run data:book <arquivo>” para importar seus próprios livros."
+          description="Algo deu errado ao carregar o SRD embutido no app. Tente reabrir o app; se persistir, reinstale."
         />
       )}
 
@@ -116,9 +196,9 @@ export function GlossaryScreen({ onBack }: { onBack: () => void }): JSX.Element 
         <EmptyState
           title="Busque qualquer coisa"
           description={
-            library.hasBooks
+            library.hasBooks || (pdfList && pdfList.length > 0)
               ? 'Regras, magias, monstros, itens e condições — em português, sem internet.'
-              : 'Só o SRD está carregado. Importe seu livro para ter os verbetes em português.'
+              : 'Só o SRD está carregado (em inglês). Importe o PDF do seu livro, ali em cima, para ter os verbetes em português.'
           }
         />
       )}

@@ -22,6 +22,7 @@ export * from './db/characters.js';
 export * from './search/rules-search.js';
 export * from './search/schema.js';
 export * from './search/library.js';
+export * from './search/pdf-catalog.js';
 
 export * from './dm/migrations.js';
 export * from './dm/encounters.js';

@@ -131,7 +131,7 @@ export function SettingsScreen({ onBack }: { onBack: () => void }): JSX.Element 
               ref={fileInputRef}
               type="file"
               accept="application/json,.json"
-              className="settings__file-input"
+              className="file-input--hidden"
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 event.target.value = '';
@@ -141,7 +141,7 @@ export function SettingsScreen({ onBack }: { onBack: () => void }): JSX.Element 
           </div>
 
           {message && (
-            <p className={`dfo-caption settings__message settings__message--${message.tone}`}>
+            <p className={`dfo-caption form-message form-message--${message.tone}`}>
               {message.text}
             </p>
           )}

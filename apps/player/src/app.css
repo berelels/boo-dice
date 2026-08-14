@@ -133,10 +133,20 @@
 
 .gallery__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-2) var(--space-4);
   padding: calc(var(--space-5) + var(--safe-top)) var(--space-4) var(--space-4);
+}
+
+.gallery__head-info {
+  /* Encolhe antes de empurrar os ícones pra fora da tela — com 4+ botões
+     de 2.75rem cada, título grande e ícones não cabem numa linha só nos
+     aparelhos mais estreitos, e o wrap acima manda os ícones pra uma
+     segunda linha em vez de cortar tudo. */
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 
 .gallery__title {
@@ -910,6 +920,31 @@
   padding: 0 var(--space-4) var(--space-3);
 }
 
+.glossary__pdfs {
+  margin: 0 var(--space-4) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.glossary__pdf-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.glossary__pdf-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
 .glossary__results {
   display: flex;
   flex-direction: column;
@@ -1056,6 +1091,9 @@
   display: flex;
   gap: var(--space-2);
   flex: none;
+  /* Continua encostado na borda direita mesmo quando quebra pra uma
+     segunda linha (ver `.gallery__head-info`, que cede o espaço primeiro). */
+  margin-left: auto;
 }
 
 .icon-button--active {
@@ -1165,18 +1203,20 @@
   margin-top: var(--space-3);
 }
 
-.settings__file-input {
+/* Reaproveitadas em Settings.tsx (backup) e Glossary.tsx (importar PDF). */
+
+.file-input--hidden {
   display: none;
 }
 
-.settings__message {
+.form-message {
   margin-top: var(--space-2);
 }
 
-.settings__message--success {
+.form-message--success {
   color: var(--success);
 }
 
-.settings__message--error {
+.form-message--error {
   color: var(--danger);
 }

@@ -45,7 +45,7 @@ export function GalleryScreen({
   return (
     <Screen>
       <header className="gallery__head">
-        <div>
+        <div className="gallery__head-info">
           <div className="dfo-overline gallery__brand">
             <img src="/favicon.svg" alt="" className="gallery__brand-icon" aria-hidden="true" />
             Boo &amp; Dice
