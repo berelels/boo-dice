@@ -1257,3 +1257,36 @@
 .form-message--error {
   color: var(--danger);
 }
+
+/* --------------------------------------------------- ataque em tempo real -- */
+
+.attack-banner-slot {
+  position: fixed;
+  top: calc(var(--space-3) + var(--safe-top));
+  left: var(--space-4);
+  right: var(--space-4);
+  z-index: 60;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.attack-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  max-width: 26rem;
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--danger);
+  color: var(--text-on-color);
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.attack-banner--miss {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}

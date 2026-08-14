@@ -59,6 +59,32 @@ export function useCharacter(characterId: string): CharacterState {
     };
   }, [characters, characterId]);
 
+  // Um ataque do Mestre já chega salvo (ver `session.tsx`) — aqui só refletimos
+  // na tela, sem reler o banco. Só PV e condições são substituídos: se houver
+  // uma edição local ainda no debounce (ex.: o jogador editando outra coisa),
+  // ela continua valendo pros outros campos, e quando disparar grava os dois
+  // efeitos juntos — nunca um sobrescreve o outro por inteiro.
+  useEffect(
+    () =>
+      session.onAttack(({ character: patched }) => {
+        if (patched.id !== characterId) return;
+
+        if (latest.current) {
+          latest.current = {
+            ...latest.current,
+            hitPoints: patched.hitPoints,
+            conditions: patched.conditions,
+          };
+        }
+        setCharacter((current) =>
+          current && current.id === characterId
+            ? { ...current, hitPoints: patched.hitPoints, conditions: patched.conditions }
+            : current,
+        );
+      }),
+    [session, characterId],
+  );
+
   const saveNow = useCallback(async () => {
     if (timer.current !== null) {
       window.clearTimeout(timer.current);

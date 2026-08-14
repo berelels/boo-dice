@@ -4,6 +4,7 @@ import { SPRING_DEFAULT } from '@dfo/ui';
 import { AppDataProvider } from './db/provider.js';
 import { RollProvider } from './state/rolling.js';
 import { SessionProvider } from './state/session.js';
+import { AttackBanner } from './components/AttackBanner.js';
 import { GalleryScreen } from './screens/Gallery.js';
 import { CreateScreen } from './screens/Create.js';
 import { SheetScreen } from './screens/Sheet.js';
@@ -46,6 +47,7 @@ export function App(): JSX.Element {
     <AppDataProvider>
       <SessionProvider>
         <RollProvider characterId={current.name === 'sheet' ? current.characterId : null}>
+          <AttackBanner />
           {/*
             `mode="popLayout"` mantém a tela que sai no fluxo até terminar de
             animar — sem isso a saída "pula" para o topo no meio da transição.

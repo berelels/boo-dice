@@ -76,4 +76,43 @@ describe('serverMessageSchema', () => {
   it('rejeita error com motivo desconhecido', () => {
     expect(serverMessageSchema.safeParse({ type: 'error', reason: 'boom' }).success).toBe(false);
   });
+
+  it('aceita attack com dano e sem condições', () => {
+    const result = serverMessageSchema.safeParse({
+      type: 'attack',
+      characterId: 'c1',
+      source: 'Goblin',
+      hit: true,
+      damage: 5,
+    });
+    expect(result.success).toBe(true);
+    if (result.success && result.data.type === 'attack') {
+      expect(result.data.conditions).toEqual([]);
+    }
+  });
+
+  it('aceita attack que erra, com condições aplicadas', () => {
+    expect(
+      serverMessageSchema.safeParse({
+        type: 'attack',
+        characterId: 'c1',
+        source: 'Goblin',
+        hit: false,
+        damage: 0,
+        conditions: ['prone'],
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejeita attack com dano negativo', () => {
+    expect(
+      serverMessageSchema.safeParse({
+        type: 'attack',
+        characterId: 'c1',
+        source: 'Goblin',
+        hit: true,
+        damage: -1,
+      }).success,
+    ).toBe(false);
+  });
 });

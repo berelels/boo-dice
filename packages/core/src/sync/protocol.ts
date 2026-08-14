@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { characterSchema, type Character } from '../schema/character.js';
+import { CONDITIONS } from '../rules/conditions.js';
 
 /**
  * Contrato do WebSocket entre o app do jogador e o app do Mestre numa sessão
@@ -14,9 +15,11 @@ import { characterSchema, type Character } from '../schema/character.js';
  * PV/CA/condições. O painel de grupo (visão rápida) deriva o que precisa da
  * ficha completa já recebida — não existe mais um tipo de "vitrine" à parte.
  *
- * Direção única nesta rodada: só o jogador manda dado pro mestre. O mestre
- * não empurra estado de combate de volta — por isso as mensagens do lado do
- * servidor são só confirmação/erro de conexão.
+ * O mestre também pode empurrar coisa de volta: um ataque de monstro contra
+ * um personagem conectado (`attack`). O resultado (acerto, dano, condições)
+ * já vem resolvido do lado do Mestre — o jogador só aplica, não recalcula
+ * nada, e as mesmas funções puras de `rules/combat.ts`/`rules/conditions.ts`
+ * valem dos dois lados.
  */
 
 const JOIN_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem 0/O/1/I
@@ -67,9 +70,21 @@ const serverErrorSchema = z.object({
   reason: z.enum(['wrong-code', 'malformed']),
 });
 
+/** Um ataque já resolvido do lado do Mestre, aplicado direto na ficha. */
+const serverAttackSchema = z.object({
+  type: z.literal('attack'),
+  characterId: z.string(),
+  /** Nome de exibição pro jogador: "Goblin", "Ataque manual". */
+  source: z.string(),
+  hit: z.boolean(),
+  damage: z.number().int().min(0),
+  conditions: z.array(z.enum(CONDITIONS)).default([]),
+});
+
 export const serverMessageSchema = z.discriminatedUnion('type', [
   serverWelcomeSchema,
   serverErrorSchema,
+  serverAttackSchema,
 ]);
 
 export type ServerMessage = z.infer<typeof serverMessageSchema>;

@@ -7,6 +7,7 @@ import {
   DEFAULT_SESSION_PORT,
   type Character,
   type PartySnapshot,
+  type ServerMessage,
 } from '@dfo/core';
 
 const PORT = DEFAULT_SESSION_PORT;
@@ -17,6 +18,14 @@ export interface SessionHandle {
   readonly addresses: readonly string[];
   /** Estado do grupo agora — não só a partir do próximo evento de push. */
   getParty(): PartySnapshot;
+  /**
+   * Manda uma mensagem pro(s) dispositivo(s) que trouxe(ram) este personagem.
+   * `characterId` já é único o bastante pra mirar — não precisa de id de
+   * jogador. Manda pra todas as conexões que tiverem esse personagem (o
+   * mesmo jogador pode estar em dois aparelhos com o mesmo arquivo
+   * exportado); devolve `true` se pelo menos uma mandou.
+   */
+  sendToCharacter(characterId: string, message: ServerMessage): boolean;
   stop(): void;
 }
 
@@ -105,6 +114,15 @@ export function startSession(onPartyChange: (party: PartySnapshot) => void): Pro
         port: PORT,
         addresses: listLanAddresses(),
         getParty: buildSnapshot,
+        sendToCharacter(characterId, message) {
+          let sent = false;
+          for (const [ws, player] of players) {
+            if (!player.characters.has(characterId)) continue;
+            ws.send(JSON.stringify(message));
+            sent = true;
+          }
+          return sent;
+        },
         stop() {
           for (const ws of players.keys()) ws.close();
           wss.close();

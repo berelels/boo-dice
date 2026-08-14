@@ -1,6 +1,6 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron';
 import type { CombatantPatch, NewCombatantInput, SearchOptions } from '@dfo/core';
-import { IPC, type SessionStatus } from '../shared/ipc.js';
+import { IPC, type AttackPayload, type SessionStatus } from '../shared/ipc.js';
 import type { DmDb } from './db.js';
 import {
   askOracle,
@@ -177,6 +177,18 @@ function registerSessionHandlers(): void {
   ipcMain.handle(IPC.sessionStatus, () => (activeSession ? toStatus(activeSession) : null));
 
   ipcMain.handle(IPC.sessionParty, () => (activeSession ? activeSession.getParty() : null));
+
+  ipcMain.handle(IPC.sessionAttack, (_event, characterId: string, payload: AttackPayload) => {
+    if (!activeSession) return false;
+    return activeSession.sendToCharacter(characterId, {
+      type: 'attack',
+      characterId,
+      source: payload.source,
+      hit: payload.hit,
+      damage: payload.damage,
+      conditions: [...(payload.conditions ?? [])],
+    });
+  });
 }
 
 /** Fecha a sessão ativa, se houver — usado no `before-quit` do app. */

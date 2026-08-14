@@ -56,6 +56,7 @@ const dm: DmApi = {
       ipcRenderer.on(IPC.sessionPartyUpdate, listener);
       return () => ipcRenderer.removeListener(IPC.sessionPartyUpdate, listener);
     },
+    attack: (characterId, payload) => ipcRenderer.invoke(IPC.sessionAttack, characterId, payload),
   },
   settings: {
     getVaultPath: () => ipcRenderer.invoke(IPC.settingsGetVaultPath),

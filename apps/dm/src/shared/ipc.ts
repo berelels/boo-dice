@@ -2,6 +2,7 @@ import type {
   CatalogEntry,
   Combatant,
   CombatantPatch,
+  ConditionId,
   Encounter,
   EncounterWithCombatants,
   NewCombatantInput,
@@ -51,6 +52,7 @@ export const IPC = {
   sessionParty: 'session:party',
   /** Canal de push (main -> renderer), não de invoke — ver `DmApi.session.onPartyUpdate`. */
   sessionPartyUpdate: 'session:party-update',
+  sessionAttack: 'session:attack',
   settingsGetVaultPath: 'settings:get-vault-path',
   settingsChooseVaultFolder: 'settings:choose-vault-folder',
   settingsClearVaultPath: 'settings:clear-vault-path',
@@ -66,6 +68,14 @@ export interface SessionStatus {
   readonly code: string;
   readonly port: number;
   readonly addresses: readonly string[];
+}
+
+/** Resultado de um ataque já resolvido do lado do Mestre — o jogador só aplica. */
+export interface AttackPayload {
+  readonly source: string;
+  readonly hit: boolean;
+  readonly damage: number;
+  readonly conditions?: readonly ConditionId[];
 }
 
 export interface DmApi {
@@ -120,6 +130,8 @@ export interface DmApi {
     party(): Promise<PartySnapshot | null>;
     /** Único canal de push do app: assina o grupo ao vivo, retorna a função de cancelar. */
     onPartyUpdate(callback: (party: PartySnapshot) => void): () => void;
+    /** Empurra um ataque já resolvido pro dispositivo que trouxe este personagem. `false` se ninguém estiver conectado com ele. */
+    attack(characterId: string, payload: AttackPayload): Promise<boolean>;
   };
   readonly settings: {
     getVaultPath(): Promise<string | null>;
