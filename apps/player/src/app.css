@@ -133,24 +133,25 @@
 
 .gallery__head {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-2) var(--space-4);
+  flex-direction: column;
+  gap: var(--space-2);
   padding: calc(var(--space-5) + var(--safe-top)) var(--space-4) var(--space-4);
 }
 
-.gallery__head-info {
-  /* Encolhe antes de empurrar os ícones pra fora da tela — com 4+ botões
-     de 2.75rem cada, título grande e ícones não cabem numa linha só nos
-     aparelhos mais estreitos, e o wrap acima manda os ícones pra uma
-     segunda linha em vez de cortar tudo. */
-  flex: 1 1 12rem;
-  min-width: 0;
+.gallery__head-top {
+  /* Marca e ícones na mesma linha, no topo — o título grande vem depois,
+     na linha de baixo, ocupando a largura toda. Com 4+ botões de 2.75rem
+     cada, colocar os ícones ao lado do título (que é enorme) não cabe em
+     aparelho nenhum; ao lado da marca (texto pequeno), cabe. */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
 }
 
 .gallery__title {
-  margin: var(--space-2) 0 0;
+  margin: 0;
 }
 
 .gallery__brand {

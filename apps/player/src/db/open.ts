@@ -54,5 +54,8 @@ export async function openLibraryDatabase(name: string): Promise<SqlDriver> {
     const { CapacitorSqliteDriver } = await import('./capacitor-driver.js');
     return CapacitorSqliteDriver.openBundled(name);
   }
-  return SqliteWasmDriver.openFromUrl(`/data/${name}.db`);
+  // `BASE_URL` (não "/" fixo): no GitHub Pages o app mora num subcaminho
+  // (github.io/boo-dice/), e um caminho absoluto pra raiz do domínio
+  // devolveria 404 — os bancos nunca carregariam, o glossário ficaria vazio.
+  return SqliteWasmDriver.openFromUrl(`${import.meta.env.BASE_URL}data/${name}.db`);
 }

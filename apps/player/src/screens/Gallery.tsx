@@ -45,39 +45,44 @@ export function GalleryScreen({
   return (
     <Screen>
       <header className="gallery__head">
-        <div className="gallery__head-info">
+        <div className="gallery__head-top">
           <div className="dfo-overline gallery__brand">
-            <img src="/favicon.svg" alt="" className="gallery__brand-icon" aria-hidden="true" />
+            <img
+              src={`${import.meta.env.BASE_URL}favicon.svg`}
+              alt=""
+              className="gallery__brand-icon"
+              aria-hidden="true"
+            />
             Boo &amp; Dice
           </div>
-          <h1 className="dfo-display gallery__title">
-            Seus
-            <br />
-            personagens
-          </h1>
+          <div className="gallery__head-actions">
+            <Tappable
+              onTap={() => setPreference(resolved === 'dark' ? 'light' : 'dark')}
+              className="icon-button"
+              ariaLabel={resolved === 'dark' ? 'Usar tema claro' : 'Usar tema escuro'}
+            >
+              <span aria-hidden="true">{resolved === 'dark' ? '☀' : '☾'}</span>
+            </Tappable>
+            <Tappable
+              onTap={onJoinSession}
+              className={`icon-button${session.status === 'connected' ? ' icon-button--active' : ''}`}
+              ariaLabel={session.status === 'connected' ? 'Sessão ativa' : 'Entrar em sessão'}
+            >
+              <SessionIcon />
+            </Tappable>
+            <Tappable onTap={onGlossary} className="icon-button" ariaLabel="Abrir o glossário">
+              <BookIcon />
+            </Tappable>
+            <Tappable onTap={onSettings} className="icon-button" ariaLabel="Ajustes">
+              <GearIcon />
+            </Tappable>
+          </div>
         </div>
-        <div className="gallery__head-actions">
-          <Tappable
-            onTap={() => setPreference(resolved === 'dark' ? 'light' : 'dark')}
-            className="icon-button"
-            ariaLabel={resolved === 'dark' ? 'Usar tema claro' : 'Usar tema escuro'}
-          >
-            <span aria-hidden="true">{resolved === 'dark' ? '☀' : '☾'}</span>
-          </Tappable>
-          <Tappable
-            onTap={onJoinSession}
-            className={`icon-button${session.status === 'connected' ? ' icon-button--active' : ''}`}
-            ariaLabel={session.status === 'connected' ? 'Sessão ativa' : 'Entrar em sessão'}
-          >
-            <SessionIcon />
-          </Tappable>
-          <Tappable onTap={onGlossary} className="icon-button" ariaLabel="Abrir o glossário">
-            <BookIcon />
-          </Tappable>
-          <Tappable onTap={onSettings} className="icon-button" ariaLabel="Ajustes">
-            <GearIcon />
-          </Tappable>
-        </div>
+        <h1 className="dfo-display gallery__title">
+          Seus
+          <br />
+          personagens
+        </h1>
       </header>
 
       {session.status === 'connected' && (
