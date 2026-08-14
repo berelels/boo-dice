@@ -7,7 +7,9 @@ import {
   SKILLS,
 } from './abilities.js';
 import { levelForXp, proficiencyBonus, xpToNextLevel } from './progression.js';
-import { hitDicePools, totalLevel } from './classes.js';
+import { CLASS_IDS, hitDicePools, totalLevel } from './classes.js';
+import { resolveClassFeatures, syncClassFeatures } from './classFeatures.js';
+import { SUBCLASSES } from './subclasses.js';
 import {
   multiclassCasterLevel,
   pactMagic,
@@ -614,5 +616,126 @@ describe('classes', () => {
       { classId: 'rogue', level: 3 },
     ]);
     expect(pools.get(8)).toBe(5);
+  });
+});
+
+describe('classFeatures', () => {
+  it('bardo 5 tem Inspiração de Bardo com recarga curta e usos = mod. de CAR', () => {
+    const features = resolveClassFeatures({
+      classes: [{ classId: 'bard', level: 5 }],
+      abilities: { ...STANDARD_SCORES, cha: 16 },
+    });
+    const inspiration = features.find((f) => f.id === 'class:bard:bardic-inspiration')!;
+    expect(inspiration.resource).toEqual({
+      id: 'class:bard:bardic-inspiration',
+      label: 'Inspiração de Bardo',
+      max: 3,
+      spent: 0,
+      recharge: 'short', // Fonte de Inspiração já valeu no nível 5.
+    });
+  });
+
+  it('guerreiro 1 tem Segundo Fôlego mas ainda não tem Surto de Ação', () => {
+    const features = resolveClassFeatures({
+      classes: [{ classId: 'fighter', level: 1 }],
+      abilities: STANDARD_SCORES,
+    });
+    expect(features.some((f) => f.id === 'class:fighter:second-wind')).toBe(true);
+    expect(features.some((f) => f.id === 'class:fighter:action-surge')).toBe(false);
+  });
+
+  it('multiclasse guerreiro 4 / mago 4 ganha duas Melhorias de Atributo', () => {
+    const features = resolveClassFeatures({
+      classes: [{ classId: 'fighter', level: 4 }, { classId: 'wizard', level: 4 }],
+      abilities: STANDARD_SCORES,
+    });
+    expect(features.some((f) => f.id === 'class:fighter:asi:4')).toBe(true);
+    expect(features.some((f) => f.id === 'class:wizard:asi:4')).toBe(true);
+  });
+
+  it('syncClassFeatures preserva usos gastos e limita ao novo máximo', () => {
+    const character = createCharacter({
+      id: 'sync-1',
+      classes: [{ classId: 'fighter', level: 9 }], // Indomável, 1 uso
+      abilities: STANDARD_SCORES,
+      features: [
+        {
+          id: 'class:fighter:indomitable',
+          label: 'Indomável',
+          source: 'Guerreiro',
+          description: '',
+          resource: { id: 'class:fighter:indomitable', label: 'Indomável', max: 5, spent: 5, recharge: 'long' },
+        },
+      ],
+    });
+
+    const synced = syncClassFeatures(character);
+    const indomitable = synced.features.find((f) => f.id === 'class:fighter:indomitable')!;
+    // O nível 9 só dá 1 uso — o "spent: 5" fabricado no fixture é limitado ao novo máximo.
+    expect(indomitable.resource).toMatchObject({ max: 1, spent: 1 });
+  });
+
+  it('syncClassFeatures remove características da classe removida e preserva as caseiras', () => {
+    const character = createCharacter({
+      id: 'sync-2',
+      classes: [{ classId: 'fighter', level: 4 }, { classId: 'wizard', level: 2 }],
+      abilities: STANDARD_SCORES,
+      features: [{ id: 'homebrew:dark-vision', label: 'Visão no Escuro (dádiva)', source: 'Casa', description: '' }],
+    });
+
+    const withFighter = syncClassFeatures(character);
+    expect(withFighter.features.some((f) => f.id.startsWith('class:fighter:'))).toBe(true);
+
+    const withoutFighter = syncClassFeatures({
+      ...withFighter,
+      classes: withFighter.classes.filter((entry) => entry.classId !== 'fighter'),
+    });
+
+    expect(withoutFighter.features.some((f) => f.id.startsWith('class:fighter:'))).toBe(false);
+    expect(withoutFighter.features.some((f) => f.id === 'homebrew:dark-vision')).toBe(true);
+  });
+
+  it('syncClassFeatures é idempotente — sem mudança de classe, devolve a mesma referência', () => {
+    const character = createCharacter({
+      id: 'sync-3',
+      classes: [{ classId: 'bard', level: 5 }],
+      abilities: STANDARD_SCORES,
+    });
+
+    const once = syncClassFeatures(character);
+    const twice = syncClassFeatures(once);
+    expect(twice).toBe(once);
+  });
+
+  it('trocar de trilha troca as características da subclasse sem quebrar', () => {
+    const character = createCharacter({
+      id: 'sync-4',
+      classes: [{ classId: 'bard', level: 6, subclassId: 'lore' }],
+      abilities: STANDARD_SCORES,
+    });
+
+    const withLore = syncClassFeatures(character);
+    expect(withLore.features.some((f) => f.id === 'class:bard:lore-bonus-proficiencies')).toBe(true);
+
+    const withoutSubclass = syncClassFeatures({
+      ...withLore,
+      classes: [{ classId: 'bard', level: 6 }],
+    });
+
+    expect(withoutSubclass.features.some((f) => f.id === 'class:bard:lore-bonus-proficiencies')).toBe(false);
+    // Características da classe base (sem subclasse) continuam.
+    expect(withoutSubclass.features.some((f) => f.id === 'class:bard:bardic-inspiration')).toBe(true);
+  });
+
+  it('todas as 12 classes têm conteúdo de características além da Melhoria de Atributo', () => {
+    for (const classId of CLASS_IDS) {
+      const subclassId = SUBCLASSES[classId][0]?.id;
+      const features = resolveClassFeatures({
+        classes: [{ classId, level: 20, subclassId }],
+        abilities: STANDARD_SCORES,
+      });
+      const beyondAsi = features.filter((f) => !f.id.includes(':asi:'));
+      expect(beyondAsi.length, `${classId} não tem características cadastradas`).toBeGreaterThan(0);
+    }
   });
 });

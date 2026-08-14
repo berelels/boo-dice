@@ -44,7 +44,13 @@ export interface ClassDefinition {
   readonly savingThrows: readonly [Ability, Ability];
   /** Quantas perícias escolher ao começar por esta classe. */
   readonly skillChoices: number;
+  /** Nível *nesta classe* em que a trilha (subclasse) é escolhida. */
+  readonly subclassSelectionLevel: number;
+  /** Níveis *nesta classe* em que uma Melhoria de Atributo é concedida. */
+  readonly abilityScoreImprovementLevels: readonly number[];
 }
+
+const DEFAULT_ASI_LEVELS: readonly number[] = [4, 8, 12, 16, 19];
 
 export const CLASSES: Readonly<Record<ClassId, ClassDefinition>> = {
   barbarian: {
@@ -55,6 +61,8 @@ export const CLASSES: Readonly<Record<ClassId, ClassDefinition>> = {
     spellcastingAbility: null,
     savingThrows: ['str', 'con'],
     skillChoices: 2,
+    subclassSelectionLevel: 3,
+    abilityScoreImprovementLevels: DEFAULT_ASI_LEVELS,
   },
   bard: {
     id: 'bard',
@@ -64,6 +72,8 @@ export const CLASSES: Readonly<Record<ClassId, ClassDefinition>> = {
     spellcastingAbility: 'cha',
     savingThrows: ['dex', 'cha'],
     skillChoices: 3,
+    subclassSelectionLevel: 3,
+    abilityScoreImprovementLevels: DEFAULT_ASI_LEVELS,
   },
   cleric: {
     id: 'cleric',
@@ -73,6 +83,8 @@ export const CLASSES: Readonly<Record<ClassId, ClassDefinition>> = {
     spellcastingAbility: 'wis',
     savingThrows: ['wis', 'cha'],
     skillChoices: 2,
+    subclassSelectionLevel: 1,
+    abilityScoreImprovementLevels: DEFAULT_ASI_LEVELS,
   },
   druid: {
     id: 'druid',
@@ -82,6 +94,8 @@ export const CLASSES: Readonly<Record<ClassId, ClassDefinition>> = {
     spellcastingAbility: 'wis',
     savingThrows: ['int', 'wis'],
     skillChoices: 2,
+    subclassSelectionLevel: 2,
+    abilityScoreImprovementLevels: DEFAULT_ASI_LEVELS,
   },
   fighter: {
     id: 'fighter',
@@ -91,6 +105,9 @@ export const CLASSES: Readonly<Record<ClassId, ClassDefinition>> = {
     spellcastingAbility: null,
     savingThrows: ['str', 'con'],
     skillChoices: 2,
+    subclassSelectionLevel: 3,
+    // Única classe com duas Melhorias de Atributo extras (6 e 14).
+    abilityScoreImprovementLevels: [4, 6, 8, 12, 14, 16, 19],
   },
   monk: {
     id: 'monk',
@@ -100,6 +117,8 @@ export const CLASSES: Readonly<Record<ClassId, ClassDefinition>> = {
     spellcastingAbility: null,
     savingThrows: ['str', 'dex'],
     skillChoices: 2,
+    subclassSelectionLevel: 3,
+    abilityScoreImprovementLevels: DEFAULT_ASI_LEVELS,
   },
   paladin: {
     id: 'paladin',
@@ -109,6 +128,8 @@ export const CLASSES: Readonly<Record<ClassId, ClassDefinition>> = {
     spellcastingAbility: 'cha',
     savingThrows: ['wis', 'cha'],
     skillChoices: 2,
+    subclassSelectionLevel: 3,
+    abilityScoreImprovementLevels: DEFAULT_ASI_LEVELS,
   },
   ranger: {
     id: 'ranger',
@@ -118,6 +139,8 @@ export const CLASSES: Readonly<Record<ClassId, ClassDefinition>> = {
     spellcastingAbility: 'wis',
     savingThrows: ['str', 'dex'],
     skillChoices: 3,
+    subclassSelectionLevel: 3,
+    abilityScoreImprovementLevels: DEFAULT_ASI_LEVELS,
   },
   rogue: {
     id: 'rogue',
@@ -127,6 +150,9 @@ export const CLASSES: Readonly<Record<ClassId, ClassDefinition>> = {
     spellcastingAbility: null,
     savingThrows: ['dex', 'int'],
     skillChoices: 4,
+    subclassSelectionLevel: 3,
+    // Única classe com uma Melhoria de Atributo extra (10), no lugar do 14.
+    abilityScoreImprovementLevels: [4, 8, 10, 12, 16, 19],
   },
   sorcerer: {
     id: 'sorcerer',
@@ -136,6 +162,8 @@ export const CLASSES: Readonly<Record<ClassId, ClassDefinition>> = {
     spellcastingAbility: 'cha',
     savingThrows: ['con', 'cha'],
     skillChoices: 2,
+    subclassSelectionLevel: 1,
+    abilityScoreImprovementLevels: DEFAULT_ASI_LEVELS,
   },
   warlock: {
     id: 'warlock',
@@ -145,6 +173,8 @@ export const CLASSES: Readonly<Record<ClassId, ClassDefinition>> = {
     spellcastingAbility: 'cha',
     savingThrows: ['wis', 'cha'],
     skillChoices: 2,
+    subclassSelectionLevel: 1,
+    abilityScoreImprovementLevels: DEFAULT_ASI_LEVELS,
   },
   wizard: {
     id: 'wizard',
@@ -154,6 +184,8 @@ export const CLASSES: Readonly<Record<ClassId, ClassDefinition>> = {
     spellcastingAbility: 'int',
     savingThrows: ['int', 'wis'],
     skillChoices: 2,
+    subclassSelectionLevel: 2,
+    abilityScoreImprovementLevels: DEFAULT_ASI_LEVELS,
   },
 };
 

@@ -7,6 +7,8 @@ export * from './dice/roll.js';
 export * from './rules/abilities.js';
 export * from './rules/progression.js';
 export * from './rules/classes.js';
+export * from './rules/subclasses.js';
+export * from './rules/classFeatures.js';
 export * from './rules/spellcasting.js';
 export * from './rules/combat.js';
 export * from './rules/conditions.js';

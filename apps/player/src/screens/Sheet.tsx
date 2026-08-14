@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ABILITIES,
   ABILITY_ABBREVIATIONS,
@@ -16,6 +16,7 @@ import {
   MAX_LEVEL,
   MIN_ABILITY_SCORE,
   SKILL_DEFINITIONS,
+  SUBCLASSES,
   abilitiesAtOrAboveCap,
   applyDamage,
   applyDeathSave,
@@ -35,12 +36,14 @@ import {
   shortRest,
   spellLevelLabel,
   suggestedMaxHitPoints,
+  syncClassFeatures,
   totalLevel,
   xpToNextLevel,
   type Ability,
   type Character,
   type ClassId,
   type DerivedCharacter,
+  type Feature,
   type Skill,
   type SpellEntry,
 } from '@dfo/core';
@@ -106,6 +109,19 @@ export function SheetScreen({
   };
 
   const derived = useMemo(() => (character ? deriveCharacter(character) : null), [character]);
+
+  // Assinatura primitiva das classes — não usar `character`/`character.features`
+  // aqui: `update()` sempre cria uma referência nova, e depender do objeto
+  // inteiro faria este efeito disparar a cada gravação, entrando em loop.
+  const classSignature = useMemo(
+    () => character?.classes.map((entry) => `${entry.classId}:${entry.level}:${entry.subclassId ?? ''}`).join('|') ?? '',
+    [character?.classes],
+  );
+
+  useEffect(() => {
+    if (!character) return;
+    update((current) => syncClassFeatures(current));
+  }, [classSignature]);
 
   if (error) {
     return (
@@ -1659,7 +1675,16 @@ function PouchTab({ character, derived, update }: TabProps): JSX.Element {
 
 function ProfileTab({ character, derived, update }: TabProps): JSX.Element {
   const [addClass, setAddClass] = useState(false);
+  const [subclassSheetIndex, setSubclassSheetIndex] = useState<number | null>(null);
   const nextLevelXp = xpToNextLevel(character.xp);
+
+  const classFeatures = character.features.filter((feature) => feature.id.startsWith('class:'));
+  const featuresBySource = new Map<string, Feature[]>();
+  for (const feature of classFeatures) {
+    const group = featuresBySource.get(feature.source) ?? [];
+    group.push(feature);
+    featuresBySource.set(feature.source, group);
+  }
 
   const set = (field: keyof Character['personality'], value: string): void =>
     update((current) => ({ ...current, personality: { ...current.personality, [field]: value } }));
@@ -1702,6 +1727,20 @@ function ProfileTab({ character, derived, update }: TabProps): JSX.Element {
                 max={MAX_LEVEL}
                 onChange={(level) => setClassLevel(index, level)}
               />
+              {entry.level >= CLASSES[entry.classId].subclassSelectionLevel && (
+                <Tappable
+                  as="div"
+                  className="class-row__subclass"
+                  onTap={() => setSubclassSheetIndex(index)}
+                >
+                  <span className="dfo-overline">Trilha</span>
+                  <span className={entry.subclassId ? 'dfo-body' : 'dfo-body class-row__subclass-prompt'}>
+                    {entry.subclassId
+                      ? (SUBCLASSES[entry.classId].find((sub) => sub.id === entry.subclassId)?.label ?? entry.subclassId)
+                      : 'Escolher trilha'}
+                  </span>
+                </Tappable>
+              )}
             </div>
           ))}
 
@@ -1717,6 +1756,31 @@ function ProfileTab({ character, derived, update }: TabProps): JSX.Element {
           )}
         </Card>
       </Section>
+
+      {featuresBySource.size > 0 && (
+        <Section title="Características de classe">
+          <Card>
+            {[...featuresBySource.entries()].map(([source, group]) => (
+              <div key={source} className="feature-group">
+                <div className="dfo-overline feature-group__source">{source}</div>
+                {group.map((feature) => (
+                  <div key={feature.id} className="feature-row">
+                    <div className="feature-row__head">
+                      <span className="dfo-body">{feature.label}</span>
+                      {feature.resource && (
+                        <Chip>
+                          {feature.resource.max - feature.resource.spent}/{feature.resource.max} usos
+                        </Chip>
+                      )}
+                    </div>
+                    <p className="dfo-caption">{feature.description}</p>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </Card>
+        </Section>
+      )}
 
       <Section title="Experiência">
         <Card>
@@ -1849,6 +1913,41 @@ function ProfileTab({ character, derived, update }: TabProps): JSX.Element {
             ))}
           </div>
         </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={subclassSheetIndex !== null}
+        onClose={() => setSubclassSheetIndex(null)}
+        title="Escolher trilha"
+      >
+        {subclassSheetIndex !== null && (
+          <div className="editor">
+            <div className="class-picker">
+              {SUBCLASSES[character.classes[subclassSheetIndex]!.classId].map((sub) => (
+                <Tappable
+                  as="div"
+                  key={sub.id}
+                  className="class-option"
+                  style={classGradientVars(character.classes[subclassSheetIndex]!.classId)}
+                  hapticOnTap
+                  onTap={() => {
+                    const index = subclassSheetIndex;
+                    update((current) => ({
+                      ...current,
+                      classes: current.classes.map((entry, i) =>
+                        i === index ? { ...entry, subclassId: sub.id } : entry,
+                      ),
+                    }));
+                    setSubclassSheetIndex(null);
+                  }}
+                >
+                  <span className="class-option__name">{sub.label}</span>
+                  <span className="class-option__die">{sub.description}</span>
+                </Tappable>
+              ))}
+            </div>
+          </div>
+        )}
       </BottomSheet>
     </>
   );
