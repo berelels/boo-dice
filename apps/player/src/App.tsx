@@ -30,6 +30,10 @@ export type Route =
 export function App(): JSX.Element {
   const [stack, setStack] = useState<Route[]>([{ name: 'gallery' }]);
   const current = stack.at(-1)!;
+  // Incrementado a cada exclusão de personagem — entra na key da Galeria para
+  // garantir uma montagem nova (e portanto uma releitura da lista) mesmo que,
+  // por algum motivo, a tela não tivesse remontado sozinha ao voltar.
+  const [galleryGeneration, setGalleryGeneration] = useState(0);
 
   const push = useCallback((route: Route) => setStack((routes) => [...routes, route]), []);
   const pop = useCallback(
@@ -48,7 +52,7 @@ export function App(): JSX.Element {
           */}
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.div
-              key={routeKey(current)}
+              key={routeKey(current, galleryGeneration)}
               initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
               // `pointerEvents: 'none'` entra na hora, sem esperar o resto da
@@ -82,6 +86,7 @@ export function App(): JSX.Element {
                 <SheetScreen
                   characterId={current.characterId}
                   onBack={() => reset({ name: 'gallery' })}
+                  onDeleted={() => setGalleryGeneration((generation) => generation + 1)}
                   onGlossary={() => push({ name: 'glossary' })}
                 />
               )}
@@ -96,6 +101,8 @@ export function App(): JSX.Element {
   );
 }
 
-function routeKey(route: Route): string {
-  return route.name === 'sheet' ? `sheet:${route.characterId}` : route.name;
+function routeKey(route: Route, galleryGeneration: number): string {
+  if (route.name === 'sheet') return `sheet:${route.characterId}`;
+  if (route.name === 'gallery') return `gallery:${galleryGeneration}`;
+  return route.name;
 }

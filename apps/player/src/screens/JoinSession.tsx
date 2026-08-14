@@ -3,7 +3,7 @@ import { DEFAULT_SESSION_PORT, type CharacterSummary } from '@dfo/core';
 import { Button, Card, Chip, EmptyState, Field, Screen, Tappable, TopBar } from '@dfo/ui';
 import { useAppData } from '../db/provider.js';
 import { useSession } from '../state/session.js';
-import { canScanQr, scanSessionQr } from '../state/qrScan.js';
+import { canScanQr, scanSessionQr, type QrScanStage } from '../state/qrScan.js';
 
 /**
  * Entrar na sessão do Mestre.
@@ -23,6 +23,7 @@ export function JoinSessionScreen({ onBack }: { onBack: () => void }): JSX.Eleme
   const [port, setPort] = useState(DEFAULT_SESSION_PORT);
   const [code, setCode] = useState('');
   const [scanning, setScanning] = useState(false);
+  const [scanStage, setScanStage] = useState<QrScanStage | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export function JoinSessionScreen({ onBack }: { onBack: () => void }): JSX.Eleme
     setScanning(true);
     setScanError(null);
     try {
-      const result = await scanSessionQr();
+      const result = await scanSessionQr(setScanStage);
       if (!result) {
         setScanError('Não consegui ler um QR de sessão. Tente de novo ou preencha à mão.');
         return;
@@ -41,10 +42,22 @@ export function JoinSessionScreen({ onBack }: { onBack: () => void }): JSX.Eleme
       setHost(result.host);
       setPort(result.port);
       setCode(result.code.toUpperCase());
+    } catch (error) {
+      setScanError(error instanceof Error ? error.message : 'Não consegui abrir a câmera. Tente de novo.');
     } finally {
       setScanning(false);
+      setScanStage(null);
     }
   };
+
+  const scanLabel =
+    scanStage === 'installing-module'
+      ? 'Baixando leitor de QR…'
+      : scanStage === 'scanning'
+        ? 'Abrindo câmera…'
+        : scanning
+          ? 'Só um instante…'
+          : '◻ Escanear QR do Mestre';
 
   const toggle = (id: string): void => {
     setSelected((current) => {
@@ -95,7 +108,7 @@ export function JoinSessionScreen({ onBack }: { onBack: () => void }): JSX.Eleme
             {canScanQr() && (
               <div className="join-session__scan">
                 <Button variant="secondary" full disabled={scanning} onTap={() => void scan()}>
-                  {scanning ? 'Abrindo câmera…' : '◻ Escanear QR do Mestre'}
+                  {scanLabel}
                 </Button>
                 {scanError && <div className="join-session__error">{scanError}</div>}
               </div>

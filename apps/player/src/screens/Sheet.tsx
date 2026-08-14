@@ -84,10 +84,13 @@ type Tab = 'combate' | 'pericias' | 'magias' | 'bolsa' | 'perfil';
 export function SheetScreen({
   characterId,
   onBack,
+  onDeleted,
   onGlossary,
 }: {
   characterId: string;
   onBack: () => void;
+  /** Chamado após a exclusão ser gravada — força a Galeria a recarregar a lista. */
+  onDeleted: () => void;
   onGlossary: () => void;
 }): JSX.Element {
   const { characters } = useAppData();
@@ -98,6 +101,7 @@ export function SheetScreen({
   const remove = async (): Promise<void> => {
     discardPendingSave();
     await characters.delete(characterId);
+    onDeleted();
     onBack();
   };
 
