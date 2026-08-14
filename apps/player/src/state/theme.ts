@@ -17,8 +17,17 @@ export type ThemePreference = 'system' | 'light' | 'dark';
 const STORAGE_KEY = 'dfo:theme';
 
 function read(): ThemePreference {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  return stored === 'light' || stored === 'dark' ? stored : 'system';
+  // Em aba privada do Safari com "Bloquear todos os cookies" ativo,
+  // `localStorage` lança `SecurityError` até em leitura — e isto roda antes
+  // do React montar (ver `initTheme`), então sem o try/catch a exceção
+  // impede a própria montagem: tela preta, sem nenhum erro visível ao
+  // usuário.
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored === 'light' || stored === 'dark' ? stored : 'system';
+  } catch {
+    return 'system';
+  }
 }
 
 function apply(preference: ThemePreference): void {
@@ -52,8 +61,13 @@ export function useTheme(): {
 
   const setPreference = useCallback((next: ThemePreference) => {
     setState(next);
-    if (next === 'system') localStorage.removeItem(STORAGE_KEY);
-    else localStorage.setItem(STORAGE_KEY, next);
+    try {
+      if (next === 'system') localStorage.removeItem(STORAGE_KEY);
+      else localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      // Sem acesso ao localStorage: o tema muda na tela igual, só não
+      // sobrevive a um recarregamento.
+    }
     apply(next);
   }, []);
 
