@@ -58,4 +58,16 @@ export const DM_MIGRATIONS: readonly Migration[] = [
         ON session_notes (updated_at DESC);
     `,
   },
+  {
+    version: 2,
+    name: 'ataque-do-combatente',
+    // Colunas opcionais: um combatente monstro escolhido do bestiário chega
+    // com bônus de acerto e dado de dano já preenchidos (ver `AttackSheet`),
+    // mas nada aqui exige preencher — combatentes antigos e os digitados à
+    // mão continuam válidos com as duas colunas nulas.
+    up: `
+      ALTER TABLE combatants ADD COLUMN attack_bonus INTEGER;
+      ALTER TABLE combatants ADD COLUMN damage_dice TEXT;
+    `,
+  },
 ];

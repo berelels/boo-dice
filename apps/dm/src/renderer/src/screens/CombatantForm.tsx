@@ -2,13 +2,17 @@ import { useState } from 'react';
 import {
   CONDITIONS,
   CONDITION_DEFINITIONS,
+  parseMonsterActions,
   type Combatant,
   type CombatantKind,
   type CombatantPatch,
   type ConditionId,
+  type MonsterAction,
   type NewCombatantInput,
+  type SearchHit,
 } from '@dfo/core';
-import { Button, Chip, Field, SegmentedControl } from '@dfo/ui';
+import { Button, Card, Chip, Field, SegmentedControl } from '@dfo/ui';
+import { useDmApi } from '../db/useDmApi.js';
 
 const KIND_OPTIONS: readonly { readonly value: CombatantKind; readonly label: string }[] = [
   { value: 'pc', label: 'Jogador' },
@@ -16,12 +20,20 @@ const KIND_OPTIONS: readonly { readonly value: CombatantKind; readonly label: st
   { value: 'monster', label: 'Monstro' },
 ];
 
+function numberField(data: unknown, key: string): number | null {
+  if (typeof data !== 'object' || data === null) return null;
+  const value = (data as Record<string, unknown>)[key];
+  return typeof value === 'number' ? value : null;
+}
+
 /**
  * Um formulário, dois modos. `existing === null` é "adicionar combatente"
- * (nome, tipo, iniciativa, PV máximo). Com `existing`, vira o cartão de
- * edição: dano e cura aplicam na hora (é o botão que o mestre mais usa, em
- * combate), o resto (nome, iniciativa, CA, notas, condições) junta num só
- * "Salvar" — não há por que interromper o jogo pra cada campo.
+ * (nome, tipo, iniciativa, PV máximo — e, pra monstro, um atalho pra
+ * preencher tudo isso e o ataque a partir do bestiário). Com `existing`,
+ * vira o cartão de edição: dano e cura aplicam na hora (é o botão que o
+ * mestre mais usa, em combate), o resto (nome, iniciativa, CA, notas,
+ * condições) junta num só "Salvar" — não há por que interromper o jogo pra
+ * cada campo.
  */
 export function CombatantForm({
   existing,
@@ -34,6 +46,7 @@ export function CombatantForm({
   onSave: (patch: CombatantPatch) => void;
   onRemove: () => void;
 }): JSX.Element {
+  const dm = useDmApi();
   const [name, setName] = useState(existing?.name ?? '');
   const [kind, setKind] = useState<CombatantKind>(existing?.kind ?? 'npc');
   const [initiative, setInitiative] = useState(existing?.initiative ?? 10);
@@ -44,6 +57,38 @@ export function CombatantForm({
   const [notes, setNotes] = useState(existing?.notes ?? '');
   const [conditions, setConditions] = useState<ConditionId[]>([...(existing?.conditions ?? [])]);
   const [amount, setAmount] = useState(0);
+
+  // Só usados em modo "adicionar" + tipo Monstro — busca no bestiário pra
+  // pré-preencher nome/PV/CA/ataque, em vez de digitar tudo às cegas.
+  const [monsterQuery, setMonsterQuery] = useState('');
+  const [monsterHits, setMonsterHits] = useState<SearchHit[]>([]);
+  const [attackBonus, setAttackBonus] = useState<number | null>(null);
+  const [damageDice, setDamageDice] = useState<string | null>(null);
+  const [monsterActions, setMonsterActions] = useState<MonsterAction[]>([]);
+
+  const searchMonsters = (value: string): void => {
+    setMonsterQuery(value);
+    if (value.trim().length === 0) {
+      setMonsterHits([]);
+      return;
+    }
+    void dm.library.search(value, { limit: 10, kinds: ['monster'] }).then(setMonsterHits);
+  };
+
+  const pickMonster = async (hit: SearchHit): Promise<void> => {
+    const entry = await dm.library.get(hit.id);
+    const parsedActions = parseMonsterActions(entry?.data ?? null);
+    const firstAction = parsedActions[0] ?? null;
+
+    setName(hit.title);
+    setHpMax(numberField(entry?.data, 'hitPoints') ?? hpMax);
+    setArmorClass(String(numberField(entry?.data, 'armorClass') ?? armorClass));
+    setMonsterActions(parsedActions);
+    setAttackBonus(firstAction?.attackBonus ?? null);
+    setDamageDice(firstAction?.damageDice ?? null);
+    setMonsterHits([]);
+    setMonsterQuery(hit.title);
+  };
 
   const toggleCondition = (id: ConditionId): void => {
     setConditions((current) =>
@@ -56,6 +101,38 @@ export function CombatantForm({
   if (!existing) {
     return (
       <div className="combatant-form">
+        <Field label="Tipo">
+          <SegmentedControl value={kind} onChange={setKind} options={KIND_OPTIONS} />
+        </Field>
+
+        {kind === 'monster' && (
+          <Field label="Escolher do bestiário (opcional)">
+            <input
+              type="search"
+              className="dfo-input"
+              value={monsterQuery}
+              placeholder="Goblin, lobo, esqueleto…"
+              autoComplete="off"
+              onChange={(event) => searchMonsters(event.target.value)}
+            />
+            {monsterHits.length > 0 && (
+              <div className="combatant-form__monster-hits">
+                {monsterHits.map((hit) => (
+                  <Card key={hit.id} onTap={() => void pickMonster(hit)}>
+                    <span className="dfo-body">{hit.title}</span>
+                  </Card>
+                ))}
+              </div>
+            )}
+            {monsterActions.length > 0 && (
+              <p className="dfo-caption">
+                Ataque: +{attackBonus} para acertar, {damageDice} de dano
+                {monsterActions.length > 1 ? ` (${monsterActions[0]!.name}, entre ${monsterActions.length})` : ''}
+              </p>
+            )}
+          </Field>
+        )}
+
         <Field label="Nome">
           <input
             type="text"
@@ -64,10 +141,6 @@ export function CombatantForm({
             placeholder="Goblin batedor"
             autoComplete="off"
           />
-        </Field>
-
-        <Field label="Tipo">
-          <SegmentedControl value={kind} onChange={setKind} options={KIND_OPTIONS} />
         </Field>
 
         <div className="combatant-form__row">
@@ -109,6 +182,8 @@ export function CombatantForm({
               initiative,
               hpMax,
               armorClass: parsedArmorClass,
+              attackBonus: kind === 'monster' ? attackBonus : null,
+              damageDice: kind === 'monster' ? damageDice : null,
             })
           }
         >

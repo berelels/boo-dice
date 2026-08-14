@@ -182,6 +182,33 @@ describe('EncounterRepository', () => {
     expect(loaded?.combatants).toEqual([]);
   });
 
+  it('guarda bônus de acerto e dado de dano de um monstro, e persiste sem eles pros demais', async () => {
+    const encounter = await repo.create('Combate');
+    const goblin = await repo.addCombatant(encounter.id, {
+      name: 'Goblin',
+      kind: 'monster',
+      initiative: 12,
+      hpMax: 7,
+      attackBonus: 4,
+      damageDice: '1d6+2',
+    });
+    const hero = await repo.addCombatant(encounter.id, { name: 'Thorin', kind: 'pc', initiative: 18 });
+
+    expect(goblin.attackBonus).toBe(4);
+    expect(goblin.damageDice).toBe('1d6+2');
+    expect(hero.attackBonus).toBeNull();
+    expect(hero.damageDice).toBeNull();
+
+    const loaded = await repo.get(encounter.id);
+    const loadedGoblin = loaded?.combatants.find((c) => c.id === goblin.id);
+    expect(loadedGoblin?.attackBonus).toBe(4);
+    expect(loadedGoblin?.damageDice).toBe('1d6+2');
+
+    const updated = await repo.updateCombatant(goblin.id, { attackBonus: 5, damageDice: '2d6' });
+    expect(updated.attackBonus).toBe(5);
+    expect(updated.damageDice).toBe('2d6');
+  });
+
   it('reordena combatentes explicitamente', async () => {
     const encounter = await repo.create('Combate');
     const a = await repo.addCombatant(encounter.id, { name: 'A', initiative: 5 });

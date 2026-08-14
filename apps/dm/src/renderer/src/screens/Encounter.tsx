@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react';
-import { sortByInitiative, type Combatant, type EncounterWithCombatants } from '@dfo/core';
+import {
+  sortByInitiative,
+  type Character,
+  type Combatant,
+  type EncounterWithCombatants,
+  type PartySnapshot,
+} from '@dfo/core';
 import { BottomSheet, Button, Card, Chip, EmptyState, Tappable } from '@dfo/ui';
 import { useDmApi } from '../db/useDmApi.js';
 import { CombatantForm } from './CombatantForm.js';
+import { AttackSheet, type PresetAttack } from './AttackSheet.js';
 
 const KIND_LABELS = { pc: 'Jogador', npc: 'NPC', monster: 'Monstro' } as const;
 
@@ -16,6 +23,12 @@ export function EncounterScreen({
   const dm = useDmApi();
   const [encounter, setEncounter] = useState<EncounterWithCombatants | null>(null);
   const [formTarget, setFormTarget] = useState<'new' | Combatant | null>(null);
+  // Um monstro do rastreador ataca um personagem *conectado* — o rastreador
+  // não sabe quem está na sessão ao vivo, então escolhe o alvo na hora,
+  // buscando o grupo atual só quando o mestre pede pra atacar.
+  const [attackCombatant, setAttackCombatant] = useState<Combatant | null>(null);
+  const [party, setParty] = useState<PartySnapshot>({ players: [] });
+  const [attackCharacter, setAttackCharacter] = useState<Character | null>(null);
 
   const reload = (): void => {
     void dm.encounters.get(encounterId).then(setEncounter);
@@ -37,6 +50,20 @@ export function EncounterScreen({
   };
 
   const closeForm = (): void => setFormTarget(null);
+
+  const startAttack = (combatant: Combatant): void => {
+    setAttackCombatant(combatant);
+    void dm.session.party().then((snapshot) => setParty(snapshot ?? { players: [] }));
+  };
+
+  const presetAttack: PresetAttack | null =
+    attackCombatant?.attackBonus != null && attackCombatant.damageDice != null
+      ? {
+          source: attackCombatant.name,
+          attackBonus: attackCombatant.attackBonus,
+          damageDice: attackCombatant.damageDice,
+        }
+      : null;
 
   return (
     <div className="encounter">
@@ -70,39 +97,50 @@ export function EncounterScreen({
       )}
 
       <div className="encounter__list">
-        {encounter.combatants.map((combatant) => (
-          <Card
-            key={combatant.id}
-            onTap={() => setFormTarget(combatant)}
-            className={
-              combatant.id === encounter.currentCombatantId ? 'encounter__combatant--current' : ''
-            }
-          >
-            <div className="combatant-row__head">
-              <span className="dfo-headline">{combatant.name}</span>
-              <span className="dfo-numeric">{combatant.initiative}</span>
-            </div>
-            <div className="combatant-row__meta">
-              <Chip tone="neutral">{KIND_LABELS[combatant.kind]}</Chip>
-              <span className="dfo-caption">
-                PV {combatant.hp.current}/{combatant.hp.max}
-                {combatant.hp.temporary > 0 ? ` (+${combatant.hp.temporary})` : ''}
-              </span>
-              {combatant.armorClass !== null && (
-                <span className="dfo-caption">CA {combatant.armorClass}</span>
-              )}
-            </div>
-            {combatant.conditions.length > 0 && (
-              <div className="combatant-row__conditions">
-                {combatant.conditions.map((condition) => (
-                  <Chip key={condition} tone="danger">
-                    {condition}
-                  </Chip>
-                ))}
+        {encounter.combatants.map((combatant) => {
+          const canAttack = combatant.kind === 'monster' && combatant.attackBonus != null && combatant.damageDice != null;
+          return (
+            <Card
+              key={combatant.id}
+              className={
+                combatant.id === encounter.currentCombatantId ? 'encounter__combatant--current' : ''
+              }
+            >
+              <div className="encounter__combatant-row">
+                <Tappable as="div" className="encounter__combatant-info" onTap={() => setFormTarget(combatant)}>
+                  <div className="combatant-row__head">
+                    <span className="dfo-headline">{combatant.name}</span>
+                    <span className="dfo-numeric">{combatant.initiative}</span>
+                  </div>
+                  <div className="combatant-row__meta">
+                    <Chip tone="neutral">{KIND_LABELS[combatant.kind]}</Chip>
+                    <span className="dfo-caption">
+                      PV {combatant.hp.current}/{combatant.hp.max}
+                      {combatant.hp.temporary > 0 ? ` (+${combatant.hp.temporary})` : ''}
+                    </span>
+                    {combatant.armorClass !== null && (
+                      <span className="dfo-caption">CA {combatant.armorClass}</span>
+                    )}
+                  </div>
+                  {combatant.conditions.length > 0 && (
+                    <div className="combatant-row__conditions">
+                      {combatant.conditions.map((condition) => (
+                        <Chip key={condition} tone="danger">
+                          {condition}
+                        </Chip>
+                      ))}
+                    </div>
+                  )}
+                </Tappable>
+                {canAttack && (
+                  <Button variant="danger" onTap={() => startAttack(combatant)}>
+                    Atacar
+                  </Button>
+                )}
               </div>
-            )}
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
 
       <div className="encounter__add">
@@ -143,6 +181,38 @@ export function EncounterScreen({
           />
         )}
       </BottomSheet>
+
+      <BottomSheet
+        open={attackCombatant !== null && attackCharacter === null}
+        onClose={() => setAttackCombatant(null)}
+        title={attackCombatant ? `${attackCombatant.name} ataca quem?` : undefined}
+      >
+        {party.players.length === 0 && (
+          <EmptyState
+            title="Ninguém conectado"
+            description="Só dá pra atacar um personagem que esteja na sessão ao vivo agora."
+          />
+        )}
+        <div className="encounter__attack-targets">
+          {party.players.map((player) =>
+            player.characters.map((character) => (
+              <Card key={character.id} onTap={() => setAttackCharacter(character)}>
+                <span className="dfo-body">{character.name}</span>
+                <span className="dfo-caption"> — {player.playerName}</span>
+              </Card>
+            )),
+          )}
+        </div>
+      </BottomSheet>
+
+      <AttackSheet
+        character={attackCharacter}
+        presetAttack={presetAttack ?? undefined}
+        onClose={() => {
+          setAttackCombatant(null);
+          setAttackCharacter(null);
+        }}
+      />
     </div>
   );
 }

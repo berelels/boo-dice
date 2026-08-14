@@ -172,6 +172,24 @@
   outline-offset: -2px;
 }
 
+.encounter__combatant-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.encounter__combatant-info {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.encounter__attack-targets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .combatant-row__head {
   display: flex;
   align-items: center;
@@ -232,6 +250,13 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1);
+}
+
+.combatant-form__monster-hits {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 
 /* -------------------------------------------------------------- notas -- */

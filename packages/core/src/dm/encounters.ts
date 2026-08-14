@@ -39,6 +39,9 @@ export interface Combatant {
   readonly armorClass: number | null;
   readonly conditions: readonly ConditionId[];
   readonly notes: string;
+  /** Bônus de acerto e dado de dano — normalmente vêm do bestiário, ao escolher um monstro. */
+  readonly attackBonus: number | null;
+  readonly damageDice: string | null;
 }
 
 export interface EncounterWithCombatants extends Encounter {
@@ -52,6 +55,8 @@ export interface NewCombatantInput {
   readonly hpMax?: number;
   readonly armorClass?: number | null;
   readonly notes?: string;
+  readonly attackBonus?: number | null;
+  readonly damageDice?: string | null;
 }
 
 export interface CombatantPatch {
@@ -67,6 +72,8 @@ export interface CombatantPatch {
   readonly temporaryHp?: number;
   /** Conjunto de condições ativas; expandido automaticamente (marcar "Inconsciente" acende "Incapacitado"+"Caído"). */
   readonly conditions?: readonly ConditionId[];
+  readonly attackBonus?: number | null;
+  readonly damageDice?: string | null;
 }
 
 /** Ordem de turno por iniciativa: maior primeiro, empate resolvido pela ordem manual. */
@@ -137,6 +144,8 @@ interface CombatantRow {
   armor_class: number | null;
   conditions: string;
   notes: string;
+  attack_bonus: number | null;
+  damage_dice: string | null;
 }
 
 function toEncounter(row: EncounterRow): Encounter {
@@ -162,6 +171,8 @@ function toCombatant(row: CombatantRow): Combatant {
     armorClass: row.armor_class,
     conditions: JSON.parse(row.conditions) as ConditionId[],
     notes: row.notes,
+    attackBonus: row.attack_bonus,
+    damageDice: row.damage_dice,
   };
 }
 
@@ -236,12 +247,14 @@ export class EncounterRepository {
       armorClass: input.armorClass ?? null,
       conditions: [],
       notes: input.notes ?? '',
+      attackBonus: input.attackBonus ?? null,
+      damageDice: input.damageDice ?? null,
     };
 
     await this.driver.execute(
       `INSERT INTO combatants
-         (id, encounter_id, name, kind, initiative, sort_order, hp_current, hp_max, hp_temp, armor_class, conditions, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, encounter_id, name, kind, initiative, sort_order, hp_current, hp_max, hp_temp, armor_class, conditions, notes, attack_bonus, damage_dice)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         combatant.id,
         combatant.encounterId,
@@ -255,6 +268,8 @@ export class EncounterRepository {
         combatant.armorClass,
         JSON.stringify(combatant.conditions),
         combatant.notes,
+        combatant.attackBonus,
+        combatant.damageDice,
       ],
     );
     await this.touchEncounter(encounterId);
@@ -286,11 +301,13 @@ export class EncounterRepository {
     if (patch.initiative !== undefined) combatant = { ...combatant, initiative: patch.initiative };
     if (patch.armorClass !== undefined) combatant = { ...combatant, armorClass: patch.armorClass };
     if (patch.notes !== undefined) combatant = { ...combatant, notes: patch.notes };
+    if (patch.attackBonus !== undefined) combatant = { ...combatant, attackBonus: patch.attackBonus };
+    if (patch.damageDice !== undefined) combatant = { ...combatant, damageDice: patch.damageDice };
 
     await this.driver.execute(
       `UPDATE combatants SET
          name = ?, kind = ?, initiative = ?, hp_current = ?, hp_max = ?, hp_temp = ?,
-         armor_class = ?, conditions = ?, notes = ?
+         armor_class = ?, conditions = ?, notes = ?, attack_bonus = ?, damage_dice = ?
        WHERE id = ?`,
       [
         combatant.name,
@@ -302,6 +319,8 @@ export class EncounterRepository {
         combatant.armorClass,
         JSON.stringify(combatant.conditions),
         combatant.notes,
+        combatant.attackBonus,
+        combatant.damageDice,
         combatant.id,
       ],
     );

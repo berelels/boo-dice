@@ -22,18 +22,31 @@ interface RolledAttack {
   readonly damage: number;
 }
 
+/** Ataque já definido de antemão — vindo de um combatente do rastreador de Iniciativa, pula a busca/entrada manual. */
+export interface PresetAttack {
+  readonly source: string;
+  readonly attackBonus: number;
+  readonly damageDice: string;
+}
+
 /**
  * Ataque de monstro contra um personagem conectado — busca no bestiário
  * (com bônus de acerto e dado de dano já preenchidos, extraídos de
  * `catalog.data.actions` do SRD) ou entrada manual, rola contra a CA atual
  * do alvo, e só depois de conferir o resultado o mestre confirma o envio.
  * O jogador nunca vê um número sem o mestre ter mandado de propósito.
+ *
+ * Com `presetAttack` (chamado a partir de um combatente monstro já
+ * cadastrado no rastreador de Iniciativa), pula direto pra rolagem — o
+ * ataque já foi escolhido antes, não precisa buscar de novo.
  */
 export function AttackSheet({
   character,
+  presetAttack,
   onClose,
 }: {
   character: Character | null;
+  presetAttack?: PresetAttack;
   onClose: () => void;
 }): JSX.Element {
   const dm = useDmApi();
@@ -92,9 +105,21 @@ export function AttackSheet({
     setRolled(null);
   };
 
-  const source = mode === 'search' ? (monsterName ?? '') : manualName.trim() || 'Ataque manual';
-  const attackBonus = mode === 'search' ? (selectedAction?.attackBonus ?? null) : manualBonus;
-  const damageDice = mode === 'search' ? (selectedAction?.damageDice ?? null) : manualDamage.trim();
+  const source = presetAttack
+    ? presetAttack.source
+    : mode === 'search'
+      ? (monsterName ?? '')
+      : manualName.trim() || 'Ataque manual';
+  const attackBonus = presetAttack
+    ? presetAttack.attackBonus
+    : mode === 'search'
+      ? (selectedAction?.attackBonus ?? null)
+      : manualBonus;
+  const damageDice = presetAttack
+    ? presetAttack.damageDice
+    : mode === 'search'
+      ? (selectedAction?.damageDice ?? null)
+      : manualDamage.trim();
   const canRoll = attackBonus !== null && !!damageDice && !!character;
 
   const rollAttack = (): void => {
@@ -133,19 +158,25 @@ export function AttackSheet({
         <div className="attack-sheet">
           <p className="dfo-caption">CA de {character.name}: {targetAc}</p>
 
-          <SegmentedControl
-            value={mode}
-            onChange={(next) => {
-              setMode(next);
-              setRolled(null);
-            }}
-            options={[
-              { value: 'search', label: 'Bestiário' },
-              { value: 'manual', label: 'Manual' },
-            ]}
-          />
+          {presetAttack ? (
+            <p className="dfo-body">
+              {presetAttack.source}: +{presetAttack.attackBonus} para acertar, {presetAttack.damageDice} de dano
+            </p>
+          ) : (
+            <SegmentedControl
+              value={mode}
+              onChange={(next) => {
+                setMode(next);
+                setRolled(null);
+              }}
+              options={[
+                { value: 'search', label: 'Bestiário' },
+                { value: 'manual', label: 'Manual' },
+              ]}
+            />
+          )}
 
-          {mode === 'search' ? (
+          {!presetAttack && (mode === 'search' ? (
             <>
               <input
                 type="search"
@@ -236,7 +267,7 @@ export function AttackSheet({
                 </Field>
               </div>
             </>
-          )}
+          ))}
 
           <Button variant="secondary" full disabled={!canRoll} onTap={rollAttack}>
             Rolar ataque
