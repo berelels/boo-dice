@@ -1,0 +1,672 @@
+/* Estilos das primitivas. Depende de tokens.css. */
+
+.dfo-screen {
+  min-height: 100dvh;
+  /* Espaço no fim para a faixa de rolagem flutuante nunca cobrir o último
+     controle da tela — era o que escondia o botão "Adicionar ataque". */
+  padding-bottom: calc(var(--space-7) + 4.5rem + var(--safe-bottom));
+}
+
+/* ---------------------------------------------------------------- topo ---- */
+
+.dfo-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: minmax(2.75rem, auto) 1fr minmax(2.75rem, auto);
+  align-items: center;
+  gap: var(--space-2);
+  padding: calc(var(--space-3) + var(--safe-top)) var(--space-4) var(--space-3);
+  background: var(--surface-translucent);
+  backdrop-filter: blur(var(--blur-chrome)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--blur-chrome)) saturate(180%);
+  box-shadow: 0 1px 0 var(--edge-subtle);
+}
+
+.dfo-topbar__center {
+  min-width: 0;
+  text-align: center;
+}
+
+.dfo-topbar__center > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dfo-topbar__side {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dfo-topbar__side--end {
+  justify-content: flex-end;
+}
+
+/* ---------------------------------------------------------------- herói --- */
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  min-height: 11.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: var(--text-on-color);
+  background: linear-gradient(145deg, var(--class-base) 0%, var(--class-tip) 100%);
+  /* Sombra tingida com a própria cor: é o que faz o card parecer emitir cor,
+     em vez de ser um retângulo pintado colado no fundo. Montada aqui, e não
+     no :root, porque é aqui que `--class-shadow` existe. */
+  box-shadow: 0 14px 34px -10px var(--class-shadow, rgba(28, 25, 23, 0.3));
+  isolation: isolate;
+}
+
+.hero--compact {
+  min-height: 7rem;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+}
+
+/* Manchas orgânicas: quebram a linearidade do gradiente e dão a textura macia
+   das referências. `mix-blend-mode` deixa a cor da classe atravessar. */
+.hero__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(28px);
+  opacity: 0.5;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.hero__blob--a {
+  width: 62%;
+  aspect-ratio: 1;
+  top: -22%;
+  right: -14%;
+  background: #ffffff;
+}
+
+.hero__blob--b {
+  width: 48%;
+  aspect-ratio: 1;
+  bottom: -26%;
+  left: -10%;
+  background: var(--class-tip);
+  opacity: 0.75;
+  mix-blend-mode: overlay;
+}
+
+.hero__body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.hero__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.hero__eyebrow {
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  opacity: 0.72;
+  margin-bottom: var(--space-2);
+}
+
+.hero__title {
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+
+.hero__subtitle {
+  margin-top: var(--space-2);
+  font-size: 0.9375rem;
+  font-weight: 550;
+  opacity: 0.82;
+}
+
+.hero__side {
+  flex: none;
+}
+
+.hero__level {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.hero__level-number {
+  font-size: 1.375rem;
+  font-weight: 760;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.hero__level-label {
+  font-size: 0.5625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+}
+
+.hero__portrait {
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: var(--radius-pill);
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+}
+
+.hero__footer {
+  margin-top: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* Chip sobre o herói: vidro claro, para ler sobre qualquer cor de classe. */
+.hero__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.3125rem 0.6875rem;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  flex: none;
+  color: var(--text-on-color);
+  font-weight: 720;
+  background: linear-gradient(145deg, var(--class-base) 0%, var(--class-tip) 100%);
+  border: 2px solid var(--surface-raised);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+.avatar__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* --------------------------------------------------------------- cards ---- */
+
+.dfo-card {
+  position: relative;
+  background: var(--surface-raised);
+  border: 1px solid var(--edge-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.dfo-card--tappable {
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dfo-section {
+  margin: var(--space-5) 0;
+  padding: 0 var(--space-4);
+}
+
+.dfo-section__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.dfo-divider {
+  border: 0;
+  border-top: 1px solid var(--edge-subtle);
+  margin: var(--space-4) 0;
+}
+
+/* --------------------------------------------------------------- chips ---- */
+
+.dfo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.3125rem 0.6875rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  border: 1px solid var(--edge-subtle);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.dfo-chip--accent {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent-strong);
+}
+
+.dfo-chip--danger {
+  background: var(--danger-soft);
+  border-color: transparent;
+  color: var(--danger);
+}
+
+.dfo-chip--success {
+  background: var(--success-soft);
+  border-color: transparent;
+  color: var(--success);
+}
+
+.dfo-chip__remove {
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0 0 0.125rem;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+/* ------------------------------------------------------------- botões ---- */
+
+.dfo-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 3rem;
+  padding: 0 var(--space-5);
+  /* Pílula preta cheia, como nas referências: o CTA precisa ser inconfundível. */
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 650;
+  font-size: 0.9375rem;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+}
+
+.dfo-button--full {
+  width: 100%;
+}
+
+.dfo-button--primary {
+  background: var(--text-primary);
+  color: var(--surface-raised);
+  box-shadow: var(--shadow-md);
+}
+
+.dfo-button--secondary {
+  background: var(--surface-raised);
+  border-color: var(--edge-strong);
+  color: var(--text-primary);
+}
+
+.dfo-button--ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  min-height: 2.5rem;
+}
+
+.dfo-button--danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* ------------------------------------------------------------- valores ---- */
+
+.dfo-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  padding: var(--space-4) var(--space-2);
+  background: var(--surface-raised);
+  border: 1px solid var(--edge-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+.dfo-stat__value {
+  font-weight: 740;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.dfo-stat--sm .dfo-stat__value {
+  font-size: 1.25rem;
+}
+
+.dfo-stat--md .dfo-stat__value {
+  font-size: 1.875rem;
+}
+
+.dfo-stat--lg .dfo-stat__value {
+  font-size: 2.5rem;
+}
+
+.dfo-stat__hint {
+  font-size: 0.6875rem;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dfo-stat--accent {
+  border-color: transparent;
+  background: var(--accent-soft);
+}
+
+.dfo-stat--accent .dfo-stat__value {
+  color: var(--accent-strong);
+}
+
+.dfo-stat--danger {
+  border-color: transparent;
+  background: var(--danger-soft);
+}
+
+.dfo-stat--danger .dfo-stat__value {
+  color: var(--danger);
+}
+
+.dfo-stat--success {
+  border-color: transparent;
+  background: var(--success-soft);
+}
+
+.dfo-stat--success .dfo-stat__value {
+  color: var(--success);
+}
+
+/* --------------------------------------------------------- segmentado ---- */
+
+.dfo-segmented {
+  display: flex;
+  gap: 0.125rem;
+  padding: 0.25rem;
+  background: var(--surface-sunken);
+  border: 1px solid var(--edge-subtle);
+  border-radius: var(--radius-pill);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.dfo-segmented::-webkit-scrollbar {
+  display: none;
+}
+
+.dfo-segmented__item {
+  position: relative;
+  /* `1 1 0%` (em vez de `1 0 auto`) deixa os itens dividirem o espaço em
+     partes iguais e encolherem juntos — sem isso, 5 abas (Combate, Testes,
+     Magias, Bolsa, Perfil) não cabem numa tela de celular real (~375px) e a
+     última fica cortada fora da área visível, sem nenhuma pista de que dá
+     para arrastar até ela. */
+  flex: 1 1 0%;
+  min-width: 0;
+  min-height: 2.25rem;
+  padding: 0 var(--space-3);
+  border: 0;
+  background: none;
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 650;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 420px) {
+  .dfo-segmented__item {
+    padding: 0 0.5rem;
+    font-size: 0.8125rem;
+  }
+}
+
+.dfo-segmented__item.is-active {
+  color: var(--text-primary);
+}
+
+.dfo-segmented__indicator {
+  position: absolute;
+  inset: 0;
+  background: var(--surface-raised);
+  border-radius: inherit;
+  box-shadow: var(--shadow-sm);
+}
+
+.dfo-segmented__label {
+  position: relative;
+  z-index: 1;
+}
+
+/* -------------------------------------------------------------- campos ---- */
+
+.dfo-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dfo-field + .dfo-field {
+  margin-top: var(--space-4);
+}
+
+.dfo-field input[type='text'],
+.dfo-field input[type='number'],
+.dfo-field input[type='search'],
+.dfo-field select,
+.dfo-field textarea,
+.dfo-input {
+  width: 100%;
+  min-height: 3rem;
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface-sunken);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 1rem; /* 16px evita o zoom automático do iOS ao focar */
+}
+
+.dfo-field input:focus,
+.dfo-field select:focus,
+.dfo-field textarea:focus,
+.dfo-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface-raised);
+}
+
+.dfo-field textarea {
+  min-height: 5.5rem;
+  resize: vertical;
+  line-height: 1.55;
+  padding-top: var(--space-3);
+}
+
+/* ------------------------------------------------------------- stepper ---- */
+
+.stepper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.stepper__control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.25rem;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-pill);
+}
+
+.stepper__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+.stepper__value {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  border: 0;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 0;
+  -moz-appearance: textfield;
+}
+
+.stepper__value::-webkit-outer-spin-button,
+.stepper__value::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.stepper__suffix {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+  padding-right: var(--space-2);
+}
+
+/* --------------------------------------------------------------- folha ---- */
+
+.dfo-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--surface-scrim);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.dfo-sheet {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 61;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-raised);
+  border-top: 1px solid var(--edge-highlight);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-lg);
+  padding-bottom: var(--safe-bottom);
+  overflow: hidden;
+}
+
+.dfo-sheet__grip-area {
+  flex: none;
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  /* `none` porque o gesto é tratado por Pointer Events; deixar o navegador
+     rolar junto brigaria com o arraste da folha. */
+  touch-action: none;
+  cursor: grab;
+}
+
+.dfo-sheet__grip {
+  width: 2.5rem;
+  height: 0.3125rem;
+  margin: 0 auto var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--edge-strong);
+}
+
+.dfo-sheet__title {
+  text-align: center;
+  margin: 0;
+}
+
+.dfo-sheet__content {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 var(--space-4) var(--space-5);
+}
+
+/* --------------------------------------------------------------- vazio ---- */
+
+.dfo-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.dfo-empty__text {
+  max-width: 30ch;
+  margin: 0;
+}
+
+/* Listas horizontais rolam dentro de si, nunca empurram a página. */
+.dfo-scroll-x {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  padding-bottom: var(--space-1);
+}
+
+.dfo-scroll-x::-webkit-scrollbar {
+  display: none;
+}

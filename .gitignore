@@ -1,0 +1,37 @@
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+.vite/
+coverage/
+
+# Artefatos do pipeline de dados (gerados por `npm run data`)
+packages/data/dist/
+tools/build-data/.cache/
+
+# Capacitor / nativo
+apps/player/android/
+apps/player/ios/
+
+# Electron (app do mestre) — saída do electron-vite e os catálogos copiados
+apps/dm/out/
+apps/dm/resources/data/
+
+# Livros do usuário — conteúdo licenciado, nunca versionar
+*.pdf
+LIVRO-DE-REGRAS-D_D-reduzido.html
+# Bancos compilados a partir do livro importado (mesmo conteúdo, já indexado)
+apps/player/public/data/books.db
+apps/player/public/assets/databases/booksSQLite.db
+
+# Service worker gerado em modo dev pelo vite-plugin-pwa (ver apps/player/vite.config.ts)
+apps/player/dev-dist/
+
+# Assinatura do Android — nunca sai desta máquina
+*.keystore
+*.jks
+apps/player/android/keystore.properties
+
+.env
+.env.local
+.DS_Store

@@ -1,0 +1,34 @@
+appId: com.grupohermes.dfo.dm
+productName: Boo & Dice — Mestre
+# O nome do pacote no npm (`@dfo/dm`) tem caracteres que não servem de nome
+# de arquivo (`@`, `/`) — o electron-builder usaria isso por padrão pro
+# executável e quebraria o AppImage. `executableName` só troca esse nome
+# derivado; o `productName` acima continua sendo o que aparece pro usuário.
+executableName: boo-dice-mestre
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**/*
+  - package.json
+extraResources:
+  - from: resources/data
+    to: data
+    filter: ['**/*']
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+
+linux:
+  target:
+    - AppImage
+  icon: build/icon.png
+  category: Game

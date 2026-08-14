@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6d4aff"/>
+      <stop offset="1" stop-color="#d64592"/>
+    </linearGradient>
+    <radialGradient id="vignette" cx="0.42" cy="0.5" r="0.75">
+      <stop offset="0" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="0.7" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#0d0c0f" stop-opacity="0.55"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <circle cx="460" cy="620" r="420" fill="url(#glow)"/>
+  <rect width="1024" height="1024" fill="url(#vignette)"/>
+
+  <!-- poeira de estrelas -->
+  <path d="M180 190 L188 210 L208 218 L188 226 L180 246 L172 226 L152 218 L172 210 Z" fill="#ffe9b0" opacity="0.85"/>
+  <path d="M860 210 L866 224 L880 230 L866 236 L860 250 L854 236 L840 230 L854 224 Z" fill="#ffe9b0" opacity="0.8"/>
+  <circle cx="130" cy="420" r="7" fill="#ffe9b0" opacity="0.7"/>
+  <circle cx="900" cy="720" r="6" fill="#ffe9b0" opacity="0.6"/>
+  <circle cx="240" cy="760" r="5" fill="#fff6e8" opacity="0.5"/>
+
+  <!-- sombra no chão -->
+  <ellipse cx="470" cy="906" rx="150" ry="24" fill="#0d0c0f" opacity="0.25"/>
+
+  <!-- rastro de movimento do braço até o d20 -->
+  <path d="M600 470 Q 700 380 758 300" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-dasharray="2 22" opacity="0.55"/>
+  <path d="M566 500 Q 660 430 716 360" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 20" opacity="0.4"/>
+
+  <!-- corpo do Boo -->
+  <ellipse cx="366" cy="758" rx="34" ry="34" fill="#fff6e8"/>
+  <ellipse cx="460" cy="762" rx="112" ry="132" fill="#fff6e8"/>
+  <ellipse cx="420" cy="882" rx="38" ry="29" fill="#f5e6cf"/>
+  <ellipse cx="507" cy="888" rx="36" ry="27" fill="#f5e6cf"/>
+
+  <!-- braço de apoio (para trás) -->
+  <path d="M392 662 L346 758" stroke="#fff6e8" stroke-width="46" stroke-linecap="round"/>
+  <circle cx="346" cy="758" r="30" fill="#fff6e8"/>
+
+  <!-- braço de arremesso (levantado, acabou de soltar o dado) -->
+  <path d="M520 632 L616 452" stroke="#fff6e8" stroke-width="44" stroke-linecap="round"/>
+  <circle cx="616" cy="452" r="32" fill="#fff6e8"/>
+
+  <!-- cabeça -->
+  <circle cx="422" cy="500" r="34" fill="#fff6e8"/>
+  <circle cx="505" cy="494" r="34" fill="#fff6e8"/>
+  <ellipse cx="430" cy="583" rx="27" ry="21" fill="#fff6e8"/>
+  <ellipse cx="495" cy="583" rx="27" ry="21" fill="#fff6e8"/>
+  <circle cx="460" cy="558" r="90" fill="#fff6e8"/>
+  <ellipse cx="407" cy="572" rx="15" ry="9" fill="#ff9ecb" opacity="0.5"/>
+  <ellipse cx="516" cy="572" rx="15" ry="9" fill="#ff9ecb" opacity="0.5"/>
+  <circle cx="438" cy="550" r="11" fill="#3a2360"/>
+  <circle cx="482" cy="550" r="11" fill="#3a2360"/>
+  <ellipse cx="460" cy="580" rx="10" ry="8" fill="#3a2360"/>
+
+  <!-- d20 voando -->
+  <g transform="translate(760 300) rotate(18)">
+    <path d="M0 -70 L61 -35 L61 35 L0 70 L-61 35 L-61 -35 Z" fill="none" stroke="#ffffff" stroke-width="12" stroke-linejoin="round"/>
+    <path d="M0 0 L0 -70 M0 0 L-61 -35 M0 0 L61 -35 M0 0 L-30 52 M0 0 L30 52" stroke="#ffffff" stroke-width="9" stroke-linecap="round" opacity="0.85"/>
+  </g>
+
+  <!-- d6 pequeno, girando ao fundo -->
+  <g transform="translate(258 340) rotate(-16)">
+    <rect x="-46" y="-46" width="92" height="92" rx="18" fill="#fff6e8"/>
+    <circle cx="-18" cy="-18" r="8" fill="#3a2360"/>
+    <circle cx="18" cy="0" r="8" fill="#3a2360"/>
+    <circle cx="-18" cy="18" r="8" fill="#3a2360"/>
+  </g>
+  <path d="M258 262 L266 282 L286 290 L266 298 L258 318 L250 298 L230 290 L250 282 Z" fill="#ffe9b0" opacity="0.8"/>
+
+  <!-- d4 pequeno -->
+  <g transform="translate(806 620) rotate(10)">
+    <path d="M0 -48 L44 40 L-44 40 Z" fill="none" stroke="#ffffff" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M0 -48 L0 40 M-44 40 L22 -4 M44 40 L-22 -4" stroke="#ffffff" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+  </g>
+</svg>

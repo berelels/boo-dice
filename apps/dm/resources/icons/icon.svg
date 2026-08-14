@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6d4aff"/>
+      <stop offset="1" stop-color="#d64592"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="256" fill="url(#g)"/>
+
+  <path d="M800 128 L820.8 171.2 L864 192 L820.8 212.8 L800 256 L779.2 212.8 L736 192 L779.2 171.2 Z" fill="#ffe9b0"/>
+  <circle cx="150" cy="760" r="18" fill="#ffe9b0" opacity="0.85"/>
+
+  <!-- chapéu de mestre: o mesmo Boo do app do jogador, mas de turbante e
+       varinha na cabeça — é o que diferencia os dois ícones na barra de
+       tarefas sem inventar um mascote novo. -->
+  <ellipse cx="512" cy="447" rx="132" ry="24" fill="#4a2f82"/>
+  <path d="M395 447 L512 205 L629 447 Z" fill="#4a2f82"/>
+  <path d="M512 205 L520 178 L536 172 L520 166 L512 140 L504 166 L488 172 L504 178 Z" fill="#ffe9b0"/>
+
+  <circle cx="430" cy="410" r="80" fill="#fff6e8"/>
+  <circle cx="594" cy="404" r="80" fill="#fff6e8"/>
+  <ellipse cx="450" cy="612" rx="64" ry="50" fill="#fff6e8"/>
+  <ellipse cx="574" cy="612" rx="64" ry="50" fill="#fff6e8"/>
+  <circle cx="512" cy="562" r="200" fill="#fff6e8"/>
+  <circle cx="472" cy="548" r="18" fill="#3a2360"/>
+  <circle cx="552" cy="548" r="18" fill="#3a2360"/>
+  <circle cx="512" cy="580" r="14" fill="#3a2360"/>
+</svg>

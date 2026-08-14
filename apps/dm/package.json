@@ -1,0 +1,44 @@
+{
+  "name": "@dfo/dm",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Boo & Dice — app do mestre (Electron, Linux e Windows).",
+  "author": "Grupo Hermes",
+  "type": "module",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "predev": "node scripts/sync-data.mjs && electron-builder install-app-deps",
+    "dev": "electron-vite dev",
+    "prebuild": "node scripts/sync-data.mjs && node scripts/build-icons.mjs && electron-builder install-app-deps",
+    "build": "electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "dist:win": "npm run build && electron-builder --win"
+  },
+  "dependencies": {
+    "@dfo/core": "*",
+    "@dfo/ui": "*",
+    "better-sqlite3": "^13.0.3",
+    "node-llama-cpp": "^3.20.0",
+    "pdfjs-dist": "^6.2.108",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.2.0",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^18.3.17",
+    "@types/react-dom": "^18.3.5",
+    "@types/ws": "^8.5.13",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "43.4.0",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^2.3.0",
+    "png-to-ico": "^3.0.2",
+    "sharp": "^0.35.3",
+    "vite": "^5.4.11"
+  }
+}

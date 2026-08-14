@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5"
+    />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#14120f" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f4f1" />
+    <meta name="description" content="Companion de mesa para D&D 5e — ficha, dados e glossário." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!--
+      iOS ignora o manifest.webmanifest para a maior parte disto — o Safari só
+      lê estas meta tags/links próprias para decidir como o app instalado
+      ("Adicionar à Tela de Início") aparece e se comporta.
+    -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Boo & Dice" />
+    <!-- "black-translucent" deixa a barra de status do iOS transparente sobre o app, que já lida com a área segura via `viewport-fit=cover`. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <title>Boo &amp; Dice</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

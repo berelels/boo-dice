@@ -1,0 +1,302 @@
+/*
+ * Tokens de design.
+ *
+ * Claro por padrão, escuro como variante. A primeira versão era escura, e o
+ * resultado ficou austero: cinza sobre cinza, sem hierarquia de cor. A cor
+ * aqui não é decoração — é o que diz de relance qual personagem é qual e onde
+ * termina uma seção.
+ *
+ * Todo espaçamento está em `rem` para acompanhar o tamanho de fonte do sistema:
+ * quem aumenta o texto no celular precisa que o layout cresça junto.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* Superfícies, do fundo para a frente. O fundo é levemente quente, não
+     branco puro — branco puro cansa e achata as sombras. */
+  --surface-base: #f6f4f1;
+  --surface-raised: #ffffff;
+  --surface-overlay: #ffffff;
+  --surface-sunken: #efece7;
+  --surface-translucent: rgba(255, 255, 255, 0.78);
+  --surface-scrim: rgba(28, 25, 23, 0.36);
+
+  --edge-subtle: rgba(28, 25, 23, 0.07);
+  --edge-strong: rgba(28, 25, 23, 0.14);
+  --edge-highlight: rgba(255, 255, 255, 0.9);
+
+  --text-primary: #1c1917;
+  --text-secondary: rgba(28, 25, 23, 0.62);
+  --text-tertiary: rgba(28, 25, 23, 0.40);
+  --text-on-color: #ffffff;
+
+  --accent: #6d4aff;
+  --accent-strong: #5a37e8;
+  --accent-soft: #ece7ff;
+  --accent-contrast: #ffffff;
+
+  --danger: #e0453a;
+  --danger-soft: #ffe9e6;
+  --success: #1f9d63;
+  --success-soft: #e2f6ec;
+  --warning: #d98324;
+  --warning-soft: #fdf0dd;
+  --info: #2c7fd4;
+
+  /*
+   * Cores por classe. Cada personagem carrega a cor da sua classe no card e no
+   * topo da ficha, o que torna a galeria legível de relance — você reconhece o
+   * seu bárbaro pela mancha vermelha antes de ler o nome.
+   *
+   * Os pares (base → tip) formam o gradiente do herói.
+   */
+  --class-barbarian: #d6453c;
+  --class-barbarian-tip: #f0803a;
+  --class-bard: #d64592;
+  --class-bard-tip: #f07ac2;
+  --class-cleric: #d9a520;
+  --class-cleric-tip: #f2cd5c;
+  --class-druid: #3f9e5a;
+  --class-druid-tip: #86cc76;
+  --class-fighter: #b5563a;
+  --class-fighter-tip: #e0895c;
+  --class-monk: #2fa3a8;
+  --class-monk-tip: #74d4cf;
+  --class-paladin: #c9a227;
+  --class-paladin-tip: #ffe08a;
+  --class-ranger: #4d8a3f;
+  --class-ranger-tip: #9ac96a;
+  --class-rogue: #4b4f63;
+  --class-rogue-tip: #8f93ad;
+  --class-sorcerer: #c33a5c;
+  --class-sorcerer-tip: #f27a8e;
+  --class-warlock: #7a3fb0;
+  --class-warlock-tip: #b57ae0;
+  --class-wizard: #3a5bc7;
+  --class-wizard-tip: #7f9bf0;
+
+  /* Escala de espaçamento. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  --radius-sm: 0.625rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 2rem;
+  --radius-pill: 999px;
+
+  /* Sombra cresce com a superfície: um chip não pode ter a mesma sombra de
+     uma folha que cobre a tela, senão os dois parecem estar na mesma altura. */
+  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.06);
+  --shadow-md: 0 6px 20px rgba(28, 25, 23, 0.09);
+  --shadow-lg: 0 20px 56px rgba(28, 25, 23, 0.18);
+  /*
+   * A sombra tingida NÃO pode ser montada aqui.
+   * Um `var()` dentro de uma custom property é substituído no elemento onde a
+   * propriedade é *declarada* — ou seja, no :root, onde `--class-shadow` não
+   * existe. O valor de reserva ficaria assado e seria herdado já resolvido,
+   * e toda sombra sairia cinza. Ela é montada em `.hero`, que é quem tem a cor.
+   */
+
+  --blur-chrome: 20px;
+  --blur-sheet: 32px;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-size: 100%;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --surface-base: #14120f;
+    --surface-raised: #1e1b18;
+    --surface-overlay: #262220;
+    --surface-sunken: #100e0c;
+    --surface-translucent: rgba(30, 27, 24, 0.76);
+    --surface-scrim: rgba(0, 0, 0, 0.6);
+
+    --edge-subtle: rgba(255, 255, 255, 0.08);
+    --edge-strong: rgba(255, 255, 255, 0.16);
+    --edge-highlight: rgba(255, 255, 255, 0.14);
+
+    --text-primary: #f5f1ea;
+    --text-secondary: rgba(245, 241, 234, 0.64);
+    --text-tertiary: rgba(245, 241, 234, 0.42);
+
+    --accent: #a78bfa;
+    --accent-strong: #c4b1ff;
+    --accent-soft: rgba(167, 139, 250, 0.16);
+
+    --danger: #f4756a;
+    --danger-soft: rgba(244, 117, 106, 0.16);
+    --success: #5fc98f;
+    --success-soft: rgba(95, 201, 143, 0.16);
+    --warning: #eaab5c;
+    --warning-soft: rgba(234, 171, 92, 0.16);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 20px 56px rgba(0, 0, 0, 0.6);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --surface-base: #14120f;
+  --surface-raised: #1e1b18;
+  --surface-overlay: #262220;
+  --surface-sunken: #100e0c;
+  --surface-translucent: rgba(30, 27, 24, 0.76);
+  --surface-scrim: rgba(0, 0, 0, 0.6);
+
+  --edge-subtle: rgba(255, 255, 255, 0.08);
+  --edge-strong: rgba(255, 255, 255, 0.16);
+  --edge-highlight: rgba(255, 255, 255, 0.14);
+
+  --text-primary: #f5f1ea;
+  --text-secondary: rgba(245, 241, 234, 0.64);
+  --text-tertiary: rgba(245, 241, 234, 0.42);
+
+  --accent: #a78bfa;
+  --accent-strong: #c4b1ff;
+  --accent-soft: rgba(167, 139, 250, 0.16);
+
+  --danger: #f4756a;
+  --danger-soft: rgba(244, 117, 106, 0.16);
+  --success: #5fc98f;
+  --success-soft: rgba(95, 201, 143, 0.16);
+  --warning: #eaab5c;
+  --warning-soft: rgba(234, 171, 92, 0.16);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 20px 56px rgba(0, 0, 0, 0.6);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  overscroll-behavior-y: none;
+}
+
+/*
+ * Tipografia. O tracking muda com o tamanho, nunca é um valor só: texto grande
+ * lê "espaçado demais" com tracking zero, e texto pequeno lê "apertado" sem um
+ * leve positivo. Os títulos aqui são bem maiores do que na primeira versão —
+ * é o que dá presença às telas.
+ */
+.dfo-display {
+  font-size: clamp(2.125rem, 9vw, 3rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  font-weight: 760;
+}
+
+.dfo-title {
+  font-size: 1.5rem;
+  line-height: 1.15;
+  letter-spacing: -0.024em;
+  font-weight: 700;
+}
+
+.dfo-headline {
+  font-size: 1.125rem;
+  line-height: 1.28;
+  letter-spacing: -0.012em;
+  font-weight: 640;
+}
+
+.dfo-body {
+  font-size: 1rem;
+  line-height: 1.6;
+  letter-spacing: 0;
+}
+
+.dfo-caption {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  letter-spacing: 0.006em;
+  color: var(--text-secondary);
+}
+
+.dfo-overline {
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-tertiary);
+}
+
+/* Números da ficha: tabulares, para não dançarem ao mudar de valor. */
+.dfo-numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/*
+ * Acessibilidade. Movimento reduzido não significa "sem retorno visual" —
+ * significa um equivalente sem deslocamento: a opacidade continua, o
+ * deslizamento vira aparecimento.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.12s !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --surface-translucent: var(--surface-overlay);
+    --blur-chrome: 0px;
+    --blur-sheet: 0px;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --text-secondary: var(--text-primary);
+    --text-tertiary: var(--text-primary);
+    --edge-subtle: var(--edge-strong);
+    --surface-translucent: var(--surface-overlay);
+    --blur-chrome: 0px;
+    --blur-sheet: 0px;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}

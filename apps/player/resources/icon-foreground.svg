@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- d20, mesmo desenho do favicon, escalado e centrado na safe zone do ícone adaptativo -->
+  <path d="M620 496 L715 543.5 L715 676.5 L620 724 L525 676.5 L525 543.5 Z"
+        fill="none" stroke="#ffffff" stroke-width="20" stroke-linejoin="round"/>
+  <path d="M620 610 L620 496 M620 610 L525 543.5 M620 610 L715 543.5 M620 610 L572.5 695.5 M620 610 L667.5 695.5"
+        stroke="#ffffff" stroke-width="15" stroke-linecap="round" opacity="0.85"/>
+
+  <!-- Boo, cabeça e bochechas -->
+  <circle cx="378" cy="352" r="38" fill="#fff6e8"/>
+  <circle cx="472" cy="348" r="38" fill="#fff6e8"/>
+  <ellipse cx="388" cy="452" rx="30" ry="24" fill="#fff6e8"/>
+  <ellipse cx="462" cy="452" rx="30" ry="24" fill="#fff6e8"/>
+  <circle cx="420" cy="420" r="95" fill="#fff6e8"/>
+  <circle cx="400" cy="414" r="9" fill="#3a2360"/>
+  <circle cx="444" cy="414" r="9" fill="#3a2360"/>
+  <circle cx="422" cy="430" r="7" fill="#3a2360"/>
+</svg>

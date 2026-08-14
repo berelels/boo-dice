@@ -1,0 +1,33 @@
+{
+  "name": "dungeons-fckoff",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Boo & Dice — companion de mesa para D&D 5e (jogador e mestre)",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "tools/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace @dfo/player",
+    "dev:dm": "npm run dev --workspace @dfo/dm",
+    "build": "npm run build --workspaces --if-present",
+    "pretest": "npm rebuild better-sqlite3",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --build --force && npm run typecheck --workspace @dfo/player --workspace @dfo/dm",
+    "data": "tsx tools/build-data/src/cli.ts srd",
+    "data:book": "tsx tools/build-data/src/cli.ts book",
+    "data:check": "tsx tools/build-data/scripts/check-db.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

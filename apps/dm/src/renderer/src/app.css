@@ -1,0 +1,573 @@
+/* Estilos específicos do app do mestre. Depende dos tokens de @dfo/ui. */
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--edge-subtle);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+.dm-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  padding: var(--space-2) var(--space-4) var(--space-2);
+  background: var(--surface-translucent);
+  backdrop-filter: blur(var(--blur-chrome)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--blur-chrome)) saturate(180%);
+}
+
+.chip-button {
+  border: 1px solid var(--edge-subtle);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  border-radius: var(--radius-pill);
+  padding: 0.5rem 0.875rem;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.chip-button.is-active {
+  background: var(--text-primary);
+  border-color: transparent;
+  color: var(--surface-raised);
+}
+
+/* ----------------------------------------------------------- bestiário ---- */
+
+.glossary__search {
+  padding: var(--space-3) var(--space-4) var(--space-2);
+}
+
+.glossary__total {
+  margin: var(--space-2) 0 0;
+}
+
+.glossary__filters {
+  padding: 0 var(--space-4) var(--space-3);
+}
+
+.glossary__pdfs {
+  margin: 0 var(--space-4) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.glossary__pdf-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.glossary__pdf-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.glossary__results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 0 var(--space-4) var(--space-5);
+}
+
+.glossary__hit-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.glossary__snippet {
+  margin: var(--space-2) 0 0;
+}
+
+.glossary__mark {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  border-radius: 4px;
+  padding: 0 3px;
+  font-weight: 650;
+}
+
+.entry__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.entry__paragraph {
+  margin: 0 0 var(--space-3);
+}
+
+.entry__source {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--edge-subtle);
+}
+
+/* --------------------------------------------------- rastreador de iniciativa -- */
+
+.encounter-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.encounter-list__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.encounter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.encounter__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.encounter__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.encounter__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Mesma técnica do card de classe na galeria: o turno atual ganha um contorno
+   vivo em vez de mudar a cor de fundo inteira — o resto da lista continua
+   legível de relance, só o combatente da vez chama a atenção. */
+.encounter__combatant--current {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.combatant-row__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.combatant-row__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.combatant-row__conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.combatant-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.combatant-form__row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+.combatant-form__hp {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface-raised);
+  border-radius: var(--radius-md);
+}
+
+.combatant-form__amount {
+  width: 100%;
+}
+
+.combatant-form__hp-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.combatant-form__hp-actions > * {
+  flex: 1;
+}
+
+.combatant-form__conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+/* -------------------------------------------------------------- notas -- */
+
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.notes-list__vault {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.notes-list__vault code {
+  word-break: break-all;
+}
+
+.notes-list__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.notes-list__preview {
+  margin: var(--space-2) 0 0;
+}
+
+.note-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.note-editor__header {
+  display: flex;
+}
+
+.note-editor__body {
+  resize: vertical;
+}
+
+/* -------------------------------------------------------------- sessão -- */
+
+.session {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.session__control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.session__error {
+  margin-top: var(--space-3);
+  color: var(--danger);
+}
+
+.session__join {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--edge-subtle);
+}
+
+.session__code {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  font-variant-numeric: tabular-nums;
+}
+
+.session__addresses {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-1);
+}
+
+.session__qr {
+  border-radius: var(--radius-md);
+  background: #fff;
+  padding: var(--space-2);
+}
+
+.session__party {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.oracle {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.oracle input {
+  width: 100%;
+}
+
+.oracle__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.oracle__answer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--edge-subtle);
+  width: 100%;
+}
+
+.oracle__sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.session__characters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.session__character {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--edge-subtle);
+  cursor: pointer;
+}
+
+.session__character:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+/* --------------------------------------------------- ficha do jogador -- */
+
+.player-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.player-sheet__tabs {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+}
+
+.stat__of {
+  font-size: 0.5em;
+  color: var(--text-tertiary);
+  font-weight: 550;
+}
+
+.grid-2,
+.grid-3 {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.player-sheet__vitals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.player-sheet__hp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.player-sheet__hp-value {
+  font-size: 2.5rem;
+  font-weight: 760;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.player-sheet__hp-value.is-down {
+  color: var(--danger);
+}
+
+.vitals__bar {
+  height: 0.625rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.vitals__bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--success);
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.vitals__bar-fill.is-critical {
+  background: var(--danger);
+}
+
+.player-sheet__death {
+  display: flex;
+  gap: var(--space-5);
+}
+
+.player-sheet__pips {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.pip {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50%;
+  border: 2px solid var(--edge-strong);
+  background: transparent;
+  display: inline-block;
+}
+
+.pip--on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.pip--success.pip--on {
+  background: var(--success);
+  border-color: var(--success);
+}
+
+.pip--failure.pip--on {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.player-sheet__row-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.player-sheet__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--edge-subtle);
+}
+
+.player-sheet__row:last-child {
+  border-bottom: none;
+}
+
+.player-sheet__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.player-sheet__concentration {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.player-sheet__spell-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.player-sheet__spell-group:last-child {
+  margin-bottom: 0;
+}
+
+.player-sheet__coins {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-2);
+}
+
+.player-sheet__coin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.player-sheet__prose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.player-sheet__prose-field p {
+  margin: var(--space-1) 0 0;
+}
+
+.player-sheet__paragraph {
+  white-space: pre-wrap;
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@dfo/build-data",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pipeline de dados: monta o srd.db distribuível e importa livros locais do usuário.",
+  "bin": {
+    "dfo-data": "./src/cli.ts"
+  },
+  "scripts": {
+    "build": "node --experimental-strip-types src/cli.ts srd",
+    "book": "node --experimental-strip-types src/cli.ts book",
+    "typecheck": "tsc --build"
+  },
+  "dependencies": {
+    "@dfo/core": "*",
+    "better-sqlite3": "^13.0.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0"
+  }
+}
