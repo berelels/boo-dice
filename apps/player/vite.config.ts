@@ -2,7 +2,13 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// GitHub Pages serve o app num subcaminho (github.io/boo-dice/), não na raiz
+// do domínio — diferente do dev local, do build do Capacitor e do Electron,
+// que sempre servem de "/". Só o workflow de deploy define essa variável.
+const base = process.env.GITHUB_PAGES_BASE ?? '/';
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     // Cobre o iOS: lá não existe empacotamento nativo (o app é Capacitor só
@@ -19,16 +25,19 @@ export default defineConfig({
         short_name: 'Boo & Dice',
         description: 'Companion de mesa para D&D 5e — ficha, dados e glossário.',
         lang: 'pt-BR',
-        start_url: '/',
-        scope: '/',
+        // Precisam do `base`, não de "/" fixo: no GitHub Pages o app mora num
+        // subcaminho (github.io/boo-dice/), e "/" apontaria pra raiz do
+        // domínio — instalar pelo iOS abriria em página nenhuma.
+        start_url: base,
+        scope: base,
         display: 'standalone',
         background_color: '#14120f',
         theme_color: '#14120f',
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: `${base}icons/icon-192.png`, sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: `${base}icons/icon-512.png`, sizes: '512x512', type: 'image/png', purpose: 'any' },
           {
-            src: '/icons/maskable-512.png',
+            src: `${base}icons/maskable-512.png`,
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',

@@ -14,9 +14,12 @@
     <!--
       iOS ignora o manifest.webmanifest para a maior parte disto — o Safari só
       lê estas meta tags/links próprias para decidir como o app instalado
-      ("Adicionar à Tela de Início") aparece e se comporta.
+      ("Adicionar à Tela de Início") aparece e se comporta. O link pro
+      manifest em si não precisa estar aqui: o vite-plugin-pwa já injeta o
+      dele sozinho, com o caminho certo (ver vite.config.ts) — duplicar aqui
+      com um caminho fixo quebraria a instalação quando o app for servido de
+      um subcaminho, como no GitHub Pages.
     -->
-    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Boo & Dice" />
