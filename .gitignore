@@ -35,3 +35,6 @@ apps/player/android/keystore.properties
 .env
 .env.local
 .DS_Store
+
+# Binários publicados como GitHub Release — não pertencem ao histórico do git
+release-artifacts/
