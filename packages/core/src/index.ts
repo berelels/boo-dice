@@ -29,5 +29,6 @@ export * from './search/pdf-catalog.js';
 export * from './dm/migrations.js';
 export * from './dm/encounters.js';
 export * from './dm/notes.js';
+export * from './dm/monsterActions.js';
 
 export * from './sync/protocol.js';

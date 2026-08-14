@@ -4,6 +4,7 @@ import { migrate } from '../db/migrations.js';
 import { DM_MIGRATIONS } from './migrations.js';
 import { EncounterRepository, advanceTurn, sortByInitiative, type Combatant } from './encounters.js';
 import { NotesRepository } from './notes.js';
+import { parseMonsterActions } from './monsterActions.js';
 import { CATALOG_SCHEMA, CATALOG_REBUILD } from '../search/schema.js';
 import { RulesSearch } from '../search/rules-search.js';
 import { RulesLibrary } from '../search/library.js';
@@ -213,6 +214,42 @@ describe('NotesRepository', () => {
 
     await repo.delete(note.id);
     expect(await repo.get(note.id)).toBeNull();
+  });
+});
+
+describe('parseMonsterActions', () => {
+  it('extrai bônus de acerto e dado de dano de um goblin de verdade', () => {
+    const data = {
+      actions: [
+        {
+          name: 'Cimitarra',
+          desc: 'Ataque com arma corpo a corpo: +4 para acertar...',
+          attack_bonus: 4,
+          damage: [{ damage_dice: '1d6+2', damage_type: { index: 'slashing' } }],
+        },
+        {
+          name: 'Arco Curto',
+          attack_bonus: 4,
+          damage: [{ damage_dice: '1d6+2', damage_type: { index: 'piercing' } }],
+        },
+      ],
+    };
+
+    expect(parseMonsterActions(data)).toEqual([
+      { name: 'Cimitarra', attackBonus: 4, damageDice: '1d6+2' },
+      { name: 'Arco Curto', attackBonus: 4, damageDice: '1d6+2' },
+    ]);
+  });
+
+  it('ignora ações sem bônus de acerto ou dado de dano (efeitos especiais)', () => {
+    const data = { actions: [{ name: 'Multiattack', desc: 'Faz dois ataques.' }] };
+    expect(parseMonsterActions(data)).toEqual([]);
+  });
+
+  it('devolve lista vazia pra data nulo, sem actions, ou mal formado', () => {
+    expect(parseMonsterActions(null)).toEqual([]);
+    expect(parseMonsterActions({})).toEqual([]);
+    expect(parseMonsterActions({ actions: 'não é uma lista' })).toEqual([]);
   });
 });
 

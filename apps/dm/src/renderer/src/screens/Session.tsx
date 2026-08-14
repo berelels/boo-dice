@@ -6,6 +6,7 @@ import { useDmApi } from '../db/useDmApi.js';
 import type { SessionStatus } from '../../../shared/ipc.js';
 import { OracleCard } from './Oracle.js';
 import { PlayerSheet } from './PlayerSheet.js';
+import { AttackSheet } from './AttackSheet.js';
 
 /**
  * Painel de sessão — a tela que o app abre por padrão, já que é onde a mesa
@@ -13,10 +14,8 @@ import { PlayerSheet } from './PlayerSheet.js';
  * entrar, escondido depois que a galera já entrou), e a lista de grupo ao
  * vivo — PV/CA/condições de cada personagem trazido — vem em primeiro lugar,
  * porque é o que o mestre acompanha o tempo todo, atualizando sozinha via
- * `onPartyUpdate`.
- *
- * Direção única nesta rodada: só o jogador manda dado pra cá. Não existe
- * botão de "empurrar" nada de volta pro celular.
+ * `onPartyUpdate`. Cada personagem também pode ser atacado direto daqui — ver
+ * `AttackSheet`.
  */
 export function SessionScreen(): JSX.Element {
   const dm = useDmApi();
@@ -32,6 +31,11 @@ export function SessionScreen(): JSX.Element {
   // Só a identidade, não a ficha em si — assim a ficha aberta sempre reflete
   // o último push do grupo, em vez de congelar no que chegou no toque.
   const [openCharacter, setOpenCharacter] = useState<{ playerName: string; characterId: string } | null>(
+    null,
+  );
+  // Mesma ideia de `openCharacter`: só a identidade, pra CA/PV do alvo
+  // continuarem ao vivo enquanto o mestre escolhe o ataque.
+  const [attackTarget, setAttackTarget] = useState<{ playerName: string; characterId: string } | null>(
     null,
   );
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -95,6 +99,12 @@ export function SessionScreen(): JSX.Element {
     ? party.players
         .find((player) => player.playerName === openCharacter.playerName)
         ?.characters.find((character) => character.id === openCharacter.characterId)
+    : undefined;
+
+  const attackCharacterData = attackTarget
+    ? party.players
+        .find((player) => player.playerName === attackTarget.playerName)
+        ?.characters.find((character) => character.id === attackTarget.characterId)
     : undefined;
 
   return (
@@ -178,34 +188,41 @@ export function SessionScreen(): JSX.Element {
               {player.characters.map((character) => {
                 const armorClass = deriveCharacter(character).armorClass.total;
                 return (
-                  <Tappable
-                    as="div"
-                    key={character.id}
-                    className="session__character"
-                    onTap={() => setOpenCharacter({ playerName: player.playerName, characterId: character.id })}
-                  >
-                    <div className="combatant-row__head">
-                      <span className="dfo-body">{character.name}</span>
-                      <span className="dfo-caption">{classSummary(character)}</span>
-                    </div>
-                    <div className="combatant-row__meta">
-                      <span className="dfo-caption">
-                        PV {character.hitPoints.current}/{character.hitPoints.max}
-                        {character.hitPoints.temporary > 0 ? ` (+${character.hitPoints.temporary})` : ''}
-                      </span>
-                      <span className="dfo-caption">CA {armorClass}</span>
-                      {character.inspiration && <Chip tone="accent">Inspiração</Chip>}
-                    </div>
-                    {character.conditions.length > 0 && (
-                      <div className="combatant-row__conditions">
-                        {character.conditions.map((condition) => (
-                          <Chip key={condition} tone="danger">
-                            {condition}
-                          </Chip>
-                        ))}
+                  <div key={character.id} className="session__character-row">
+                    <Tappable
+                      as="div"
+                      className="session__character"
+                      onTap={() => setOpenCharacter({ playerName: player.playerName, characterId: character.id })}
+                    >
+                      <div className="combatant-row__head">
+                        <span className="dfo-body">{character.name}</span>
+                        <span className="dfo-caption">{classSummary(character)}</span>
                       </div>
-                    )}
-                  </Tappable>
+                      <div className="combatant-row__meta">
+                        <span className="dfo-caption">
+                          PV {character.hitPoints.current}/{character.hitPoints.max}
+                          {character.hitPoints.temporary > 0 ? ` (+${character.hitPoints.temporary})` : ''}
+                        </span>
+                        <span className="dfo-caption">CA {armorClass}</span>
+                        {character.inspiration && <Chip tone="accent">Inspiração</Chip>}
+                      </div>
+                      {character.conditions.length > 0 && (
+                        <div className="combatant-row__conditions">
+                          {character.conditions.map((condition) => (
+                            <Chip key={condition} tone="danger">
+                              {condition}
+                            </Chip>
+                          ))}
+                        </div>
+                      )}
+                    </Tappable>
+                    <Button
+                      variant="danger"
+                      onTap={() => setAttackTarget({ playerName: player.playerName, characterId: character.id })}
+                    >
+                      Atacar
+                    </Button>
+                  </div>
                 );
               })}
             </div>
@@ -220,6 +237,8 @@ export function SessionScreen(): JSX.Element {
         character={openCharacterData ?? null}
         onClose={() => setOpenCharacter(null)}
       />
+
+      <AttackSheet character={attackCharacterData ?? null} onClose={() => setAttackTarget(null)} />
     </div>
   );
 }

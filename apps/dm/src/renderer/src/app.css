@@ -408,14 +408,58 @@
 }
 
 .session__character {
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--edge-subtle);
   cursor: pointer;
 }
 
-.session__character:first-child {
+.session__character-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--edge-subtle);
+}
+
+.session__character-row:first-child {
   padding-top: 0;
   border-top: none;
+}
+
+.session__character-row > .session__character {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --------------------------------------------------------- ataque -- */
+
+.attack-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.attack-sheet__row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+.attack-sheet__hits,
+.attack-sheet__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.attack-sheet__actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.attack-sheet__result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
 }
 
 /* --------------------------------------------------- ficha do jogador -- */
