@@ -2,11 +2,9 @@ import Database from 'better-sqlite3';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { basename, extname } from 'node:path';
-// A build "legacy" é a recomendada pelo próprio pdf.js pra rodar em Node —
-// a build padrão assume DOM. Sem `Worker` global (nem `workerSrc`
-// configurado), o próprio pdf.js detecta o ambiente Node e roda a extração
-// na mesma thread, sem precisar de nenhuma opção extra pra isso.
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+// Só o tipo — não gera `import` de verdade no JS final, então não interfere
+// na ordem de carregamento do módulo real (ver `loadPdfjs` abaixo).
+import type { getDocument as GetDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import {
   buildPdfCatalogRows,
   CATALOG_REBUILD,
@@ -15,6 +13,35 @@ import {
   slugifyBookId,
   type PdfCatalogRow,
 } from '@dfo/core';
+
+// A build "legacy" é a recomendada pelo próprio pdf.js pra rodar em Node —
+// a build padrão assume DOM. Sem `Worker` global (nem `workerSrc`
+// configurado), o próprio pdf.js detecta o ambiente Node e roda a extração
+// na mesma thread, sem precisar de nenhuma opção extra pra isso.
+//
+// O carregamento é adiado (`import()` dinâmico) de propósito: o pdf.js tenta
+// se auto-polyfillar com o binário nativo do pacote opcional `@napi-rs/
+// canvas` pra ter `DOMMatrix` — mas, ao carregar o módulo, uma constante de
+// topo (`SCALE_MATRIX = new DOMMatrix()`) já derruba o processo inteiro se
+// esse polyfill falhar, mesmo sem nunca renderizar página nenhuma em canvas.
+// Isso aconteceu de verdade: o build do Windows, cross-compilado no Linux,
+// nunca teve o binário nativo daquela plataforma instalado. Um `import`
+// estático no topo do arquivo não garante ordem nenhuma depois que o
+// bundler achata os módulos locais — só um `import()` dinâmico, chamado
+// depois do polyfill síncrono abaixo, garante isso. Como este arquivo só
+// extrai texto (nunca chama `page.render()`), um stub sem funcionalidade
+// real basta.
+let pdfjsPromise: Promise<{ getDocument: typeof GetDocument }> | null = null;
+function loadPdfjs(): Promise<{ getDocument: typeof GetDocument }> {
+  if (!pdfjsPromise) {
+    if (typeof globalThis.DOMMatrix === 'undefined') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (globalThis as any).DOMMatrix = class DOMMatrix {};
+    }
+    pdfjsPromise = import('pdfjs-dist/legacy/build/pdf.mjs');
+  }
+  return pdfjsPromise;
+}
 
 export { chunkText };
 
@@ -38,6 +65,7 @@ export interface ImportedPdf {
 }
 
 export async function importPdf(catalogPath: string, filePath: string): Promise<ImportedPdf> {
+  const { getDocument } = await loadPdfjs();
   const buffer = await readFile(filePath);
   const doc = await getDocument({ data: new Uint8Array(buffer) }).promise;
 
@@ -74,7 +102,7 @@ export function removePdf(catalogPath: string, bookId: string): void {
 }
 
 async function extractPageText(
-  doc: Awaited<ReturnType<typeof getDocument>['promise']>,
+  doc: Awaited<ReturnType<typeof GetDocument>['promise']>,
   pageNumber: number,
 ): Promise<string> {
   const page = await doc.getPage(pageNumber);
