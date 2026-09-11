@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import type { CSSProperties, ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { SPRING_DEFAULT } from '../motion/springs.js';
 import { Tappable } from './Tappable.js';
 
@@ -210,9 +210,19 @@ export function Divider(): JSX.Element {
 }
 
 /**
- * Controle segmentado com o indicador animado por `layoutId` — o retângulo
- * *desliza* de um segmento para o outro em vez de reaparecer no destino,
- * o que torna óbvio para onde você foi.
+ * Controle segmentado — o indicador *desliza* de um segmento para o outro em
+ * vez de reaparecer no destino, o que torna óbvio para onde você foi.
+ *
+ * O jeito idiomático de fazer isso no motion seria um `layoutId` no indicador
+ * de cada segmento, e era assim que isto funcionava. Só que um elemento de
+ * layout compartilhado dentro de uma `BottomSheet` trava a remoção da folha:
+ * a animação de saída termina, mas o `AnimatePresence` nunca desmonta a
+ * subárvore, e o scrim fica no DOM com opacidade 0 — invisível, cobrindo a
+ * tela inteira e engolindo todo clique. A interface parece perfeitamente
+ * normal e não responde a mais nada. Como este controle aparece dentro de
+ * folhas (o seletor Jogador/NPC/Monstro, por exemplo), o indicador é um
+ * elemento só, posicionado pela medida do segmento ativo — mesmo efeito,
+ * sem layout compartilhado nenhum.
  */
 export function SegmentedControl<T extends string>({
   options,
@@ -223,8 +233,53 @@ export function SegmentedControl<T extends string>({
   value: T;
   onChange: (value: T) => void;
 }): JSX.Element {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [box, setBox] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const activeIndex = options.findIndex((option) => option.value === value);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const measure = (): void => {
+      const active = container.querySelectorAll('button')[activeIndex];
+      if (!active) return;
+      const outer = container.getBoundingClientRect();
+      const inner = active.getBoundingClientRect();
+      setBox({
+        x: inner.left - outer.left + container.scrollLeft,
+        y: inner.top - outer.top,
+        width: inner.width,
+        height: inner.height,
+      });
+    };
+
+    measure();
+    // O controle encolhe junto com a tela (`flex: 1 1 0%`), então a medida
+    // precisa acompanhar — inclusive quando a folha que o contém abre.
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [activeIndex, options.length]);
+
   return (
-    <div className="dfo-segmented" role="tablist">
+    <div className="dfo-segmented" role="tablist" ref={containerRef}>
+      {box && (
+        <motion.span
+          className="dfo-segmented__indicator"
+          // `initial={false}`: ao abrir, o indicador já nasce no lugar certo,
+          // em vez de deslizar do canto até o segmento ativo.
+          initial={false}
+          animate={{ x: box.x, y: box.y, width: box.width, height: box.height }}
+          transition={SPRING_DEFAULT}
+          aria-hidden="true"
+        />
+      )}
       {options.map((option) => (
         <button
           key={option.value}
@@ -234,13 +289,6 @@ export function SegmentedControl<T extends string>({
           className={`dfo-segmented__item${option.value === value ? ' is-active' : ''}`}
           onClick={() => onChange(option.value)}
         >
-          {option.value === value && (
-            <motion.span
-              layoutId="dfo-segmented-indicator"
-              className="dfo-segmented__indicator"
-              transition={SPRING_DEFAULT}
-            />
-          )}
           <span className="dfo-segmented__label">{option.label}</span>
         </button>
       ))}

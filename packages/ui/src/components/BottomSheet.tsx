@@ -127,51 +127,60 @@ export function BottomSheet({
     }
   }, [y, height, onClose]);
 
+  // Cada filho do `AnimatePresence` precisa de `key` próprio. Envolver os dois
+  // num fragmento sem chave funciona no caso simples, mas quebra feio se algo
+  // re-renderiza enquanto a folha está saindo (ex.: fechar a folha e recarregar
+  // a lista no mesmo gesto): o `AnimatePresence` perde o rastro do filho que
+  // está saindo, a animação de saída termina e o nó nunca é removido. O scrim
+  // fica no DOM com opacidade 0 — invisível, cobrindo a tela inteira e
+  // engolindo todo clique, com a interface parecendo normal e totalmente morta.
   return (
     <AnimatePresence>
       {open && (
-        <>
-          <motion.div
-            className="dfo-scrim"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            // `onPointerUp`, não `onClick`: no toque, o navegador dispara um
-            // clique de compatibilidade um instante DEPOIS do toque que abriu
-            // a folha — e a essa altura o scrim já existe bem onde o dedo
-            // estava. Esse clique atrasado acerta o scrim e fecha a folha na
-            // hora, e a folha parece só piscar e sumir. `onPointerUp` reage
-            // ao toque de verdade, e nunca é reentregue por essa folha que
-            // acabou de aparecer.
-            onPointerUp={onClose}
-            aria-hidden="true"
-          />
-          <motion.div
-            ref={sheetRef}
-            className="dfo-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-label={label ?? title}
-            style={{ y, maxHeight: `${maxHeight * 100}dvh` }}
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={SPRING_SHEET}
+        <motion.div
+          key="scrim"
+          className="dfo-scrim"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          // `onPointerUp`, não `onClick`: no toque, o navegador dispara um
+          // clique de compatibilidade um instante DEPOIS do toque que abriu
+          // a folha — e a essa altura o scrim já existe bem onde o dedo
+          // estava. Esse clique atrasado acerta o scrim e fecha a folha na
+          // hora, e a folha parece só piscar e sumir. `onPointerUp` reage
+          // ao toque de verdade, e nunca é reentregue por essa folha que
+          // acabou de aparecer.
+          onPointerUp={onClose}
+          aria-hidden="true"
+        />
+      )}
+      {open && (
+        <motion.div
+          key="sheet"
+          ref={sheetRef}
+          className="dfo-sheet"
+          role="dialog"
+          aria-modal="true"
+          aria-label={label ?? title}
+          style={{ y, maxHeight: `${maxHeight * 100}dvh` }}
+          initial={{ y: '100%' }}
+          animate={{ y: 0 }}
+          exit={{ y: '100%' }}
+          transition={SPRING_SHEET}
+        >
+          <div
+            className="dfo-sheet__grip-area"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
           >
-            <div
-              className="dfo-sheet__grip-area"
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-            >
-              <div className="dfo-sheet__grip" aria-hidden="true" />
-              {title && <h2 className="dfo-title dfo-sheet__title">{title}</h2>}
-            </div>
-            <div className="dfo-sheet__content">{children}</div>
-          </motion.div>
-        </>
+            <div className="dfo-sheet__grip" aria-hidden="true" />
+            {title && <h2 className="dfo-title dfo-sheet__title">{title}</h2>}
+          </div>
+          <div className="dfo-sheet__content">{children}</div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

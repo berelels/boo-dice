@@ -417,6 +417,7 @@
 /* --------------------------------------------------------- segmentado ---- */
 
 .dfo-segmented {
+  position: relative;
   display: flex;
   gap: 0.125rem;
   padding: 0.25rem;
@@ -466,11 +467,16 @@
   color: var(--text-primary);
 }
 
+/* Um indicador só, posicionado por medida sobre o segmento ativo (ver
+   `SegmentedControl`) — por isso ancorado no canto do controle, e não em
+   `inset: 0` dentro do botão. Vem antes dos botões no DOM, então os rótulos
+   são pintados por cima sem precisar de `z-index`. */
 .dfo-segmented__indicator {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
   background: var(--surface-raised);
-  border-radius: inherit;
+  border-radius: var(--radius-pill);
   box-shadow: var(--shadow-sm);
 }
 
