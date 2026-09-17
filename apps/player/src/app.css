@@ -1286,7 +1286,56 @@
   pointer-events: auto;
 }
 
+/* Ajudar aliado: mesma coluna do resto da ficha; o que muda é que os campos
+   de cura e PV temporários andam lado a lado, porque são dois números curtos
+   preenchidos no meio do turno. */
+.ally-support {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ally-support__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+/* `.dfo-field + .dfo-field` empurra campos empilhados pra baixo — o que está
+   certo numa coluna, e desalinha os dois daqui, que estão lado a lado. */
+.ally-support__row > .dfo-field + .dfo-field {
+  margin-top: 0;
+}
+
+.ally-support__roll {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ally-support__roll input {
+  flex: 1 1 auto;
+}
+
+.ally-support__targets,
+.ally-support__conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.ally-support__sent {
+  color: var(--success);
+}
+
 .attack-banner--miss {
   background: var(--surface-raised);
   color: var(--text-primary);
+}
+
+/* Ajuda de um aliado: verde, pra não ser confundida com dano no canto do
+   olho — é o mesmo cantinho da tela onde o ataque aparece. */
+.attack-banner--support {
+  background: var(--success);
+  color: var(--text-on-color);
 }

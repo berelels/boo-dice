@@ -164,6 +164,7 @@ export function applyTemporaryHitPoints(hp: HitPoints, amount: number): HitPoint
   return { ...hp, temporary: Math.max(hp.temporary, Math.max(0, Math.floor(amount))) };
 }
 
+
 // ---------------------------------------------------------------------------
 // Testes contra a morte
 // ---------------------------------------------------------------------------
@@ -174,6 +175,27 @@ export interface DeathSaves {
 }
 
 export const EMPTY_DEATH_SAVES: DeathSaves = { successes: 0, failures: 0 };
+
+/**
+ * Cura considerando quem estava caído.
+ *
+ * Voltar de 0 a qualquer PV devolve a consciência, e os testes contra a morte
+ * zeram junto: eles descrevem *aquela* queda, não o personagem. Guardá-los
+ * depois de curado faria a próxima queda começar com as falhas da anterior —
+ * duas falhas acumuladas de uma luta que acabou há uma hora de jogo.
+ *
+ * Fica ao lado de `applyHealing`, e não sobre a ficha inteira, pra não puxar
+ * o schema de personagem pra dentro das regras de combate.
+ */
+export function applyHealingWithRecovery(
+  hp: HitPoints,
+  deathSaves: DeathSaves,
+  amount: number,
+): { readonly hitPoints: HitPoints; readonly deathSaves: DeathSaves } {
+  const hitPoints = applyHealing(hp, amount);
+  const recovered = hp.current === 0 && hitPoints.current > 0;
+  return { hitPoints, deathSaves: recovered ? EMPTY_DEATH_SAVES : deathSaves };
+}
 
 export type DeathSaveOutcome = 'ongoing' | 'stable' | 'dead' | 'revived';
 

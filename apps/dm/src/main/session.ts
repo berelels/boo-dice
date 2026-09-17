@@ -8,6 +8,7 @@ import {
   DEFAULT_SESSION_PORT,
   type ArchivedCharacter,
   type Character,
+  type PartyMember,
   type PartySnapshot,
   type ServerMessage,
 } from '@dfo/core';
@@ -79,8 +80,29 @@ export function startSession(onPartyChange: (party: PartySnapshot) => void): Pro
       };
     }
 
+    /** Só nomes — a ficha de um jogador nunca desce pro aparelho de outro. */
+    function buildRoster(): PartyMember[] {
+      const members: PartyMember[] = [];
+      for (const player of players.values()) {
+        for (const character of player.characters.values()) {
+          members.push({
+            characterId: character.id,
+            characterName: character.name,
+            playerName: player.playerName,
+          });
+        }
+      }
+      return members;
+    }
+
     function broadcastParty(): void {
       onPartyChange(buildSnapshot());
+
+      // Os jogadores também precisam saber quem está na sessão, pra escolher
+      // quem ajudar. Vai pra todo mundo a cada mudança: entrar, sair ou
+      // trocar de nome muda a lista de aliados possíveis na tela deles.
+      const roster = JSON.stringify({ type: 'party', members: buildRoster() });
+      for (const ws of players.keys()) ws.send(roster);
     }
 
     wss.on('connection', (ws) => {
@@ -115,6 +137,26 @@ export function startSession(onPartyChange: (party: PartySnapshot) => void): Pro
           player.characters.set(message.character.id, message.character);
           remember(player.playerName, message.character);
           broadcastParty();
+        } else if (message.type === 'support') {
+          const player = players.get(ws);
+          if (!player) return;
+          // O remetente só pode ajudar *como* um personagem que ele mesmo
+          // trouxe. Sem esta checagem, qualquer aparelho na LAN que soubesse
+          // o código poderia curar em nome de outro jogador.
+          const from = player.characters.get(message.fromCharacterId);
+          if (!from) return;
+
+          const payload = JSON.stringify({
+            type: 'support',
+            characterId: message.targetCharacterId,
+            source: from.name,
+            label: message.label,
+            effect: message.effect,
+          } satisfies ServerMessage);
+
+          for (const [socket, other] of players) {
+            if (other.characters.has(message.targetCharacterId)) socket.send(payload);
+          }
         } else if (message.type === 'leave') {
           players.delete(ws);
           broadcastParty();

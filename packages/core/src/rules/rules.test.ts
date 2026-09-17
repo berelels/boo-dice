@@ -21,6 +21,7 @@ import {
   applyDamage,
   applyDeathSave,
   applyHealing,
+  applyHealingWithRecovery,
   applyTemporaryHitPoints,
   armorClass,
   damageWhileDown,
@@ -397,6 +398,38 @@ describe('testes contra a morte', () => {
     expect(damageWhileDown(EMPTY_DEATH_SAVES, false).saves.failures).toBe(1);
     expect(damageWhileDown(EMPTY_DEATH_SAVES, true).saves.failures).toBe(2);
     expect(damageWhileDown({ successes: 0, failures: 2 }, false).outcome).toBe('dead');
+  });
+});
+
+describe('cura de quem estava caído', () => {
+  it('zera os testes contra a morte ao voltar acima de 0', () => {
+    const result = applyHealingWithRecovery(
+      { current: 0, max: 24, temporary: 0 },
+      { successes: 1, failures: 2 },
+      5,
+    );
+    expect(result.hitPoints.current).toBe(5);
+    expect(result.deathSaves).toEqual({ successes: 0, failures: 0 });
+  });
+
+  it('não mexe nos testes de quem não estava caído', () => {
+    const result = applyHealingWithRecovery(
+      { current: 10, max: 24, temporary: 0 },
+      { successes: 1, failures: 2 },
+      5,
+    );
+    expect(result.hitPoints.current).toBe(15);
+    expect(result.deathSaves).toEqual({ successes: 1, failures: 2 });
+  });
+
+  it('curar zero em quem está caído não o levanta', () => {
+    const result = applyHealingWithRecovery(
+      { current: 0, max: 24, temporary: 0 },
+      { successes: 0, failures: 2 },
+      0,
+    );
+    expect(result.hitPoints.current).toBe(0);
+    expect(result.deathSaves).toEqual({ successes: 0, failures: 2 });
   });
 });
 

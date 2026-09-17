@@ -67,6 +67,7 @@ import { useCharacter } from '../state/useCharacter.js';
 import { useRoller } from '../state/rolling.js';
 import { pickPortrait } from '../components/portrait.js';
 import { SpellPicker } from '../components/SpellPicker.js';
+import { AllySupport } from '../components/AllySupport.js';
 import { groupSpellsByLevel } from '../components/spellHelpers.js';
 import { useAppData } from '../db/provider.js';
 
@@ -440,6 +441,8 @@ function CombatTab({ character, derived, update }: TabProps): JSX.Element {
       </Section>
 
       {downed && <DeathSaves character={character} update={update} />}
+
+      <AllySupport character={character} />
 
       <Section title="Descanso">
         <Card>

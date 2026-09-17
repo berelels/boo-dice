@@ -116,3 +116,97 @@ describe('serverMessageSchema', () => {
     ).toBe(false);
   });
 });
+
+describe('ajuda entre jogadores', () => {
+  const effect = { healing: 7, temporaryHp: 0, conditionsRemoved: ['poisoned'] };
+
+  it('aceita support com quem ajuda, quem recebe e o que faz', () => {
+    expect(
+      clientMessageSchema.safeParse({
+        type: 'support',
+        fromCharacterId: 'c1',
+        targetCharacterId: 'c2',
+        label: 'Palavra Curativa',
+        effect,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('os números da ajuda são opcionais e valem zero', () => {
+    const parsed = clientMessageSchema.safeParse({
+      type: 'support',
+      fromCharacterId: 'c1',
+      targetCharacterId: 'c2',
+      label: 'Restauração Menor',
+      effect: { conditionsRemoved: ['poisoned'] },
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success && parsed.data.type === 'support') {
+      expect(parsed.data.effect.healing).toBe(0);
+      expect(parsed.data.effect.temporaryHp).toBe(0);
+    }
+  });
+
+  it('rejeita cura negativa — ajuda não machuca', () => {
+    expect(
+      clientMessageSchema.safeParse({
+        type: 'support',
+        fromCharacterId: 'c1',
+        targetCharacterId: 'c2',
+        label: 'Golpe',
+        effect: { healing: -5, temporaryHp: 0, conditionsRemoved: [] },
+      }).success,
+    ).toBe(false);
+  });
+
+  it('rejeita support sem dizer o que foi usado', () => {
+    expect(
+      clientMessageSchema.safeParse({
+        type: 'support',
+        fromCharacterId: 'c1',
+        targetCharacterId: 'c2',
+        label: '',
+        effect,
+      }).success,
+    ).toBe(false);
+  });
+
+  it('rejeita condição que não existe', () => {
+    expect(
+      clientMessageSchema.safeParse({
+        type: 'support',
+        fromCharacterId: 'c1',
+        targetCharacterId: 'c2',
+        label: 'Bênção',
+        effect: { healing: 0, temporaryHp: 0, conditionsRemoved: ['abençoado'] },
+      }).success,
+    ).toBe(false);
+  });
+
+  it('o grupo que desce pro jogador leva só nomes, nunca fichas', () => {
+    const parsed = serverMessageSchema.safeParse({
+      type: 'party',
+      members: [{ characterId: 'c2', characterName: 'Wessil', playerName: 'Gabriel' }],
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success && parsed.data.type === 'party') {
+      expect(Object.keys(parsed.data.members[0]!).sort()).toEqual([
+        'characterId',
+        'characterName',
+        'playerName',
+      ]);
+    }
+  });
+
+  it('aceita o support repassado pelo Mestre', () => {
+    expect(
+      serverMessageSchema.safeParse({
+        type: 'support',
+        characterId: 'c2',
+        source: 'Wessil',
+        label: 'Palavra Curativa',
+        effect,
+      }).success,
+    ).toBe(true);
+  });
+});

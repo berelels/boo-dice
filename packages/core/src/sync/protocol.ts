@@ -20,6 +20,12 @@ import { CONDITIONS } from '../rules/conditions.js';
  * já vem resolvido do lado do Mestre — o jogador só aplica, não recalcula
  * nada, e as mesmas funções puras de `rules/combat.ts`/`rules/conditions.ts`
  * valem dos dois lados.
+ *
+ * E um jogador pode ajudar outro (`support`): cura, PV temporários, tirar uma
+ * condição. Não existe conexão entre aparelhos de jogador — o Mestre é o
+ * único ponto em comum, então ele repassa. Isso é por desenho, não por
+ * limitação: a mesa inteira passa pelo Mestre, e é ele quem sabe quem está
+ * de fato na sessão.
  */
 
 const JOIN_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem 0/O/1/I
@@ -49,6 +55,39 @@ const clientCharacterUpdateSchema = z.object({
   character: characterSchema,
 });
 
+/**
+ * O efeito de uma ajuda, em números que o app já sabe aplicar.
+ *
+ * Só o que é mecânico e reversível pelas regras: cura, PV temporários,
+ * condição que sai. "Bênção" e afins ficam de fora de propósito — o app não
+ * modela dado de bônus em jogada futura, e fingir que modela seria pior que
+ * não ter.
+ */
+const supportEffectSchema = z.object({
+  /** Quanto curar. Zero = esta ajuda não cura. */
+  healing: z.number().int().min(0).default(0),
+  /** PV temporários concedidos — via `applyTemporaryHitPoints`, que não soma: fica o maior. */
+  temporaryHp: z.number().int().min(0).default(0),
+  /** Condições que saem do aliado. */
+  conditionsRemoved: z.array(z.enum(CONDITIONS)).default([]),
+});
+
+export type SupportEffect = z.infer<typeof supportEffectSchema>;
+
+const clientSupportSchema = z.object({
+  type: z.literal('support'),
+  /**
+   * Personagem de quem está ajudando. O Mestre confere que este id é mesmo de
+   * um personagem que *esta* conexão trouxe — sem isso, qualquer aparelho na
+   * LAN poderia se passar por outro jogador.
+   */
+  fromCharacterId: z.string(),
+  targetCharacterId: z.string(),
+  /** O que foi usado, pro aliado ler: "Palavra Curativa", "Poção de cura". */
+  label: z.string().min(1).max(60),
+  effect: supportEffectSchema,
+});
+
 const clientLeaveSchema = z.object({
   type: z.literal('leave'),
 });
@@ -56,6 +95,7 @@ const clientLeaveSchema = z.object({
 export const clientMessageSchema = z.discriminatedUnion('type', [
   clientHelloSchema,
   clientCharacterUpdateSchema,
+  clientSupportSchema,
   clientLeaveSchema,
 ]);
 
@@ -81,13 +121,51 @@ const serverAttackSchema = z.object({
   conditions: z.array(z.enum(CONDITIONS)).default([]),
 });
 
+/**
+ * Quem mais está na sessão — só nome, nunca ficha.
+ *
+ * O jogador precisa disto pra escolher quem ajudar, e precisa só disto. A
+ * ficha alheia é do outro jogador: ela sobe pro Mestre porque ele arbitra a
+ * mesa, e não desce pros outros aparelhos.
+ */
+const serverPartySchema = z.object({
+  type: z.literal('party'),
+  members: z.array(
+    z.object({
+      characterId: z.string(),
+      characterName: z.string(),
+      playerName: z.string(),
+    }),
+  ),
+});
+
+/** Ajuda de outro jogador, repassada pelo Mestre. */
+const serverSupportSchema = z.object({
+  type: z.literal('support'),
+  /** Quem recebe — o personagem deste aparelho. */
+  characterId: z.string(),
+  /** Quem ajudou, já pronto pra exibir: "Wessil". */
+  source: z.string(),
+  label: z.string(),
+  effect: supportEffectSchema,
+});
+
 export const serverMessageSchema = z.discriminatedUnion('type', [
   serverWelcomeSchema,
   serverErrorSchema,
   serverAttackSchema,
+  serverPartySchema,
+  serverSupportSchema,
 ]);
 
 export type ServerMessage = z.infer<typeof serverMessageSchema>;
+
+/** Um integrante da sessão como os *outros jogadores* o enxergam: só o nome. */
+export interface PartyMember {
+  readonly characterId: string;
+  readonly characterName: string;
+  readonly playerName: string;
+}
 
 /** Um jogador conectado e os personagens que trouxe pra sessão. */
 export interface PartyPlayer {
