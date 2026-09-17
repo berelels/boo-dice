@@ -58,6 +58,12 @@ const dm: DmApi = {
     },
     attack: (characterId, payload) => ipcRenderer.invoke(IPC.sessionAttack, characterId, payload),
   },
+  sessionLog: {
+    list: () => ipcRenderer.invoke(IPC.sessionLogList),
+    get: (id) => ipcRenderer.invoke(IPC.sessionLogGet, id),
+    setNotes: (id, notes) => ipcRenderer.invoke(IPC.sessionLogSetNotes, id, notes),
+    delete: (id) => ipcRenderer.invoke(IPC.sessionLogDelete, id),
+  },
   settings: {
     getVaultPath: () => ipcRenderer.invoke(IPC.settingsGetVaultPath),
     chooseVaultFolder: () => ipcRenderer.invoke(IPC.settingsChooseVaultFolder),

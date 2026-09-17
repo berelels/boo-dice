@@ -11,6 +11,12 @@ import {
   roundsLeft,
   timerFor,
 } from './conditionTimers.js';
+import {
+  SessionLogRepository,
+  archiveCharacter,
+  parseArchivedCharacters,
+} from './sessionLog.js';
+import { createCharacter } from '../schema/character.js';
 import { CATALOG_SCHEMA, CATALOG_REBUILD } from '../search/schema.js';
 import { RulesSearch } from '../search/rules-search.js';
 import { RulesLibrary } from '../search/library.js';
@@ -42,6 +48,7 @@ describe('migrações do mestre', () => {
     expect(names).toContain('encounters');
     expect(names).toContain('combatants');
     expect(names).toContain('session_notes');
+    expect(names).toContain('session_log');
   });
 });
 
@@ -602,5 +609,137 @@ describe('prazo das condições', () => {
     expect(parseStoredTimers('[{"id":"poisoned","endsAfterRound":3}]')).toEqual([
       { id: 'poisoned', endsAfterRound: 3 },
     ]);
+  });
+});
+
+describe('arquivo de sessões', () => {
+  const SCORES = { str: 15, dex: 14, con: 13, int: 12, wis: 10, cha: 8 };
+
+  let driver: SqlDriver;
+  let repo: SessionLogRepository;
+
+  beforeEach(async () => {
+    driver = new BetterSqlite3Driver(':memory:');
+    await migrate(driver, DM_MIGRATIONS);
+    repo = new SessionLogRepository(driver);
+  });
+
+  function wessil() {
+    const character = createCharacter({
+      id: crypto.randomUUID(),
+      name: 'Wessil',
+      classes: [{ classId: 'bard', level: 5 }],
+      abilities: SCORES,
+    });
+    return {
+      ...character,
+      hitPoints: { current: 12, max: 38, temporary: 0 },
+      conditions: ['poisoned' as const],
+      spellcasting: {
+        ...character.spellcasting,
+        slotsUsed: [2, 1, 0, 0, 0, 0, 0, 0, 0],
+        pactSlotsUsed: 0,
+      },
+    };
+  }
+
+  it('guarda só o resumo da ficha, não a ficha inteira', () => {
+    const archived = archiveCharacter('Gabriel', wessil());
+    expect(archived).toEqual({
+      playerName: 'Gabriel',
+      name: 'Wessil',
+      classes: 'Bardo 5',
+      hitPoints: { current: 12, max: 38, temporary: 0 },
+      conditions: ['poisoned'],
+      slotsUsed: [2, 1, 0, 0, 0, 0, 0, 0, 0],
+      pactSlotsUsed: 0,
+    });
+  });
+
+  it('arquiva uma sessão e lê de volta como estava', async () => {
+    const recorded = await repo.record({
+      startedAt: '2026-09-17T22:00:00.000Z',
+      endedAt: '2026-09-18T02:30:00.000Z',
+      characters: [archiveCharacter('Gabriel', wessil())],
+    });
+    expect(recorded).not.toBeNull();
+
+    const [listed] = await repo.list();
+    expect(listed?.startedAt).toBe('2026-09-17T22:00:00.000Z');
+    expect(listed?.notes).toBe('');
+    expect(listed?.characters[0]?.name).toBe('Wessil');
+    // O que o mestre perde hoje ao fechar o app: onde cada um parou.
+    expect(listed?.characters[0]?.hitPoints.current).toBe(12);
+    expect(listed?.characters[0]?.slotsUsed).toEqual([2, 1, 0, 0, 0, 0, 0, 0, 0]);
+  });
+
+  it('sessão sem ninguém não vira registro', async () => {
+    const recorded = await repo.record({
+      startedAt: '2026-09-17T22:00:00.000Z',
+      endedAt: '2026-09-17T22:00:30.000Z',
+      characters: [],
+    });
+    expect(recorded).toBeNull();
+    expect(await repo.list()).toEqual([]);
+  });
+
+  it('a anotação é escrita depois, sem tocar no resto', async () => {
+    const recorded = await repo.record({
+      startedAt: '2026-09-17T22:00:00.000Z',
+      endedAt: '2026-09-18T02:30:00.000Z',
+      characters: [archiveCharacter('Gabriel', wessil())],
+    });
+
+    const noted = await repo.setNotes(recorded!.id, 'Fugiram do templo sem a relíquia.');
+    expect(noted.notes).toBe('Fugiram do templo sem a relíquia.');
+    expect(noted.characters).toEqual(recorded!.characters);
+
+    const reloaded = await repo.get(recorded!.id);
+    expect(reloaded?.notes).toBe('Fugiram do templo sem a relíquia.');
+  });
+
+  it('lista da mais recente pra mais antiga', async () => {
+    const characters = [archiveCharacter('Gabriel', wessil())];
+    await repo.record({ startedAt: '2026-09-01T22:00:00.000Z', endedAt: '2026-09-02T01:00:00.000Z', characters });
+    await repo.record({ startedAt: '2026-09-15T22:00:00.000Z', endedAt: '2026-09-16T01:00:00.000Z', characters });
+    await repo.record({ startedAt: '2026-09-08T22:00:00.000Z', endedAt: '2026-09-09T01:00:00.000Z', characters });
+
+    expect((await repo.list()).map((session) => session.endedAt)).toEqual([
+      '2026-09-16T01:00:00.000Z',
+      '2026-09-09T01:00:00.000Z',
+      '2026-09-02T01:00:00.000Z',
+    ]);
+  });
+
+  it('apaga uma sessão sem levar as outras', async () => {
+    const characters = [archiveCharacter('Gabriel', wessil())];
+    const first = await repo.record({ startedAt: 'a', endedAt: '2026-09-02T01:00:00.000Z', characters });
+    await repo.record({ startedAt: 'b', endedAt: '2026-09-09T01:00:00.000Z', characters });
+
+    await repo.delete(first!.id);
+    expect(await repo.list()).toHaveLength(1);
+    expect(await repo.get(first!.id)).toBeNull();
+  });
+
+  it('grupo ilegível vira sessão sem ninguém, não quebra a lista', async () => {
+    const recorded = await repo.record({
+      startedAt: 'a',
+      endedAt: 'b',
+      characters: [archiveCharacter('Gabriel', wessil())],
+    });
+    await driver.execute('UPDATE session_log SET characters = ? WHERE id = ?', [
+      '{isso não é uma lista',
+      recorded!.id,
+    ]);
+
+    const [listed] = await repo.list();
+    expect(listed?.id).toBe(recorded!.id);
+    expect(listed?.characters).toEqual([]);
+  });
+
+  it('descarta personagem fora do formato sem descartar a sessão', () => {
+    expect(parseArchivedCharacters('[]')).toEqual([]);
+    expect(parseArchivedCharacters('não é json')).toEqual([]);
+    expect(parseArchivedCharacters('[{"name":"Sem os outros campos"}]')).toEqual([]);
   });
 });

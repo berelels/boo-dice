@@ -2,9 +2,11 @@ import { createServer } from 'node:http';
 import { networkInterfaces } from 'node:os';
 import { WebSocketServer, type WebSocket } from 'ws';
 import {
+  archiveCharacter,
   clientMessageSchema,
   generateJoinCode,
   DEFAULT_SESSION_PORT,
+  type ArchivedCharacter,
   type Character,
   type PartySnapshot,
   type ServerMessage,
@@ -16,8 +18,15 @@ export interface SessionHandle {
   readonly code: string;
   readonly port: number;
   readonly addresses: readonly string[];
+  readonly startedAt: string;
   /** Estado do grupo agora — não só a partir do próximo evento de push. */
   getParty(): PartySnapshot;
+  /**
+   * Todo mundo que passou por esta sessão, no último estado em que foi visto —
+   * inclusive quem já desconectou. É isto que vai pro arquivo quando a sessão
+   * termina: quem saiu mais cedo também jogou.
+   */
+  getRoster(): readonly ArchivedCharacter[];
   /**
    * Manda uma mensagem pro(s) dispositivo(s) que trouxe(ram) este personagem.
    * `characterId` já é único o bastante pra mirar — não precisa de id de
@@ -47,7 +56,16 @@ interface ConnectedPlayer {
 export function startSession(onPartyChange: (party: PartySnapshot) => void): Promise<SessionHandle> {
   return new Promise((resolve, reject) => {
     const code = generateJoinCode();
+    const startedAt = new Date().toISOString();
     const players = new Map<WebSocket, ConnectedPlayer>();
+    // Separado de `players`: aquele mapa é o grupo conectado *agora*, e perde
+    // quem fecha o app no meio. Este acumula e nunca esquece, porque é o que
+    // responde "quem jogou hoje" quando a sessão acaba.
+    const roster = new Map<string, ArchivedCharacter>();
+
+    function remember(playerName: string, character: Character): void {
+      roster.set(character.id, archiveCharacter(playerName, character));
+    }
 
     const server = createServer();
     const wss = new WebSocketServer({ server });
@@ -88,12 +106,14 @@ export function startSession(onPartyChange: (party: PartySnapshot) => void): Pro
             playerName: message.playerName,
             characters: new Map(message.characters.map((character) => [character.id, character])),
           });
+          for (const character of message.characters) remember(message.playerName, character);
           ws.send(JSON.stringify({ type: 'welcome' }));
           broadcastParty();
         } else if (message.type === 'characterUpdate') {
           const player = players.get(ws);
           if (!player) return;
           player.characters.set(message.character.id, message.character);
+          remember(player.playerName, message.character);
           broadcastParty();
         } else if (message.type === 'leave') {
           players.delete(ws);
@@ -113,7 +133,9 @@ export function startSession(onPartyChange: (party: PartySnapshot) => void): Pro
         code,
         port: PORT,
         addresses: listLanAddresses(),
+        startedAt,
         getParty: buildSnapshot,
+        getRoster: () => [...roster.values()],
         sendToCharacter(characterId, message) {
           let sent = false;
           for (const [ws, player] of players) {

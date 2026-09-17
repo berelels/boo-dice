@@ -424,6 +424,42 @@
   gap: var(--space-3);
 }
 
+/* Arquivo de sessões: mesma coluna do grupo, logo abaixo dele, porque é a
+   mesma pergunta ("como está o grupo?") feita sobre o passado. */
+.session__archive {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.session__archive-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* Prévia da anotação no cartão: duas linhas bastam pra lembrar do que se
+   trata; o resto fica pra quem abrir. */
+.session__archive-note {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: var(--space-1);
+}
+
+.session__archive-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.session__archive-notes {
+  width: 100%;
+  resize: vertical;
+}
+
 .oracle {
   display: flex;
   flex-direction: column;

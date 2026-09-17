@@ -6,6 +6,7 @@ import {
   NotesRepository,
   RulesLibrary,
   RulesSearch,
+  SessionLogRepository,
   migrate,
   type SessionNote,
 } from '@dfo/core';
@@ -26,6 +27,7 @@ export interface NotesApi {
 /** Os repositórios que o resto do processo main precisa — sem expor o driver cru. */
 export interface DmDb {
   readonly encounters: EncounterRepository;
+  readonly sessionLog: SessionLogRepository;
   /** Não é `readonly`: `refreshNotes` troca a instância ao vivo, sem reiniciar o app. */
   notes: NotesApi;
   readonly library: RulesLibrary;
@@ -53,6 +55,7 @@ export async function openDb(): Promise<DmDb> {
   // mais código, mas nunca depende de o app conseguir se relançar sozinho.
   const db: DmDb = {
     encounters: new EncounterRepository(driver),
+    sessionLog: new SessionLogRepository(driver),
     notes: await resolveNotes(new NotesRepository(driver)),
     library,
     async refreshNotes() {

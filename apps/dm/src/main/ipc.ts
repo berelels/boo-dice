@@ -95,7 +95,7 @@ export function registerIpcHandlers(db: DmDb): void {
     await db.refreshPdfs();
   });
 
-  registerSessionHandlers();
+  registerSessionHandlers(db);
   registerSettingsHandlers(db);
   registerOracleHandlers(db);
 }
@@ -152,7 +152,7 @@ function toStatus(session: SessionHandle): SessionStatus {
   return { code: session.code, port: session.port, addresses: session.addresses };
 }
 
-function registerSessionHandlers(): void {
+function registerSessionHandlers(db: DmDb): void {
   ipcMain.handle(IPC.sessionStart, async () => {
     if (activeSession) return toStatus(activeSession);
 
@@ -168,11 +168,19 @@ function registerSessionHandlers(): void {
     return toStatus(activeSession);
   });
 
-  ipcMain.handle(IPC.sessionStop, () => {
+  ipcMain.handle(IPC.sessionStop, async () => {
+    await archiveActiveSession(db);
     activeSession?.stop();
     activeSession = null;
     setOracleSessionActive(false);
   });
+
+  ipcMain.handle(IPC.sessionLogList, () => db.sessionLog.list());
+  ipcMain.handle(IPC.sessionLogGet, (_event, id: string) => db.sessionLog.get(id));
+  ipcMain.handle(IPC.sessionLogSetNotes, (_event, id: string, notes: string) =>
+    db.sessionLog.setNotes(id, notes),
+  );
+  ipcMain.handle(IPC.sessionLogDelete, (_event, id: string) => db.sessionLog.delete(id));
 
   ipcMain.handle(IPC.sessionStatus, () => (activeSession ? toStatus(activeSession) : null));
 
@@ -191,8 +199,36 @@ function registerSessionHandlers(): void {
   });
 }
 
-/** Fecha a sessão ativa, se houver — usado no `before-quit` do app. */
-export function stopActiveSession(): void {
+/**
+ * Guarda no arquivo a sessão que está terminando.
+ *
+ * Fica fora do handler porque o fim de uma sessão tem dois caminhos — o mestre
+ * apertando "Encerrar" e o app sendo fechado com a sessão no ar — e a segunda
+ * é justamente a que ele mais faz sem pensar. Sessão sem ninguém não vira
+ * registro; quem decide isso é o repositório (ver `SessionLogRepository`).
+ */
+async function archiveActiveSession(db: DmDb): Promise<void> {
+  if (!activeSession) return;
+  await db.sessionLog.record({
+    startedAt: activeSession.startedAt,
+    endedAt: new Date().toISOString(),
+    characters: activeSession.getRoster(),
+  });
+}
+
+/**
+ * Fecha a sessão ativa, se houver — usado no `before-quit` do app.
+ *
+ * Arquiva antes de fechar, e não espera a Promise: o `before-quit` do Electron
+ * é síncrono, e nada que ele deixe pendente tem garantia de rodar. Dá certo
+ * porque o `better-sqlite3` é síncrono por baixo (a Promise do driver já
+ * embrulha um INSERT que rodou), então a gravação acontece antes desta função
+ * retornar. Se o driver do mestre um dia deixar de ser síncrono, este é o
+ * ponto que quebra primeiro — e a saída seria segurar o quit com
+ * `event.preventDefault()`.
+ */
+export function stopActiveSession(db: DmDb): void {
+  void archiveActiveSession(db);
   activeSession?.stop();
   activeSession = null;
 }

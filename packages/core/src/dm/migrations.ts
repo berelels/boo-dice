@@ -99,4 +99,27 @@ export const DM_MIGRATIONS: readonly Migration[] = [
       ALTER TABLE combatants ADD COLUMN condition_timers TEXT;
     `,
   },
+  {
+    version: 5,
+    name: 'arquivo-de-sessoes',
+    // O grupo conectado vive só na memória do processo main — ao fechar o app
+    // some com ele a resposta pra "onde a gente parou?". Esta tabela guarda o
+    // que terminou: quem jogou e como cada ficha estava no fim.
+    //
+    // `characters` é JSON, não uma tabela filha: é um retrato congelado, nunca
+    // consultado por campo nem editado depois. Normalizar só criaria junção
+    // pra ler de volta exatamente o mesmo bloco.
+    up: `
+      CREATE TABLE IF NOT EXISTS session_log (
+        id         TEXT PRIMARY KEY,
+        started_at TEXT NOT NULL,
+        ended_at   TEXT NOT NULL,
+        notes      TEXT NOT NULL DEFAULT '',
+        characters TEXT NOT NULL DEFAULT '[]'
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_session_log_ended
+        ON session_log (ended_at DESC);
+    `,
+  },
 ];

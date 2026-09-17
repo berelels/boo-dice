@@ -1,4 +1,5 @@
 import type {
+  ArchivedSession,
   CatalogEntry,
   Combatant,
   CombatantPatch,
@@ -53,6 +54,10 @@ export const IPC = {
   /** Canal de push (main -> renderer), não de invoke — ver `DmApi.session.onPartyUpdate`. */
   sessionPartyUpdate: 'session:party-update',
   sessionAttack: 'session:attack',
+  sessionLogList: 'session-log:list',
+  sessionLogGet: 'session-log:get',
+  sessionLogSetNotes: 'session-log:set-notes',
+  sessionLogDelete: 'session-log:delete',
   settingsGetVaultPath: 'settings:get-vault-path',
   settingsChooseVaultFolder: 'settings:choose-vault-folder',
   settingsClearVaultPath: 'settings:clear-vault-path',
@@ -132,6 +137,13 @@ export interface DmApi {
     onPartyUpdate(callback: (party: PartySnapshot) => void): () => void;
     /** Empurra um ataque já resolvido pro dispositivo que trouxe este personagem. `false` se ninguém estiver conectado com ele. */
     attack(characterId: string, payload: AttackPayload): Promise<boolean>;
+  };
+  /** Sessões que já terminaram — quem jogou e como cada ficha ficou no fim. */
+  readonly sessionLog: {
+    list(): Promise<ArchivedSession[]>;
+    get(id: string): Promise<ArchivedSession | null>;
+    setNotes(id: string, notes: string): Promise<ArchivedSession>;
+    delete(id: string): Promise<void>;
   };
   readonly settings: {
     getVaultPath(): Promise<string | null>;

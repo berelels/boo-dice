@@ -13,6 +13,7 @@ import type { SessionStatus } from '../../../shared/ipc.js';
 import { OracleCard } from './Oracle.js';
 import { PlayerSheet } from './PlayerSheet.js';
 import { AttackSheet } from './AttackSheet.js';
+import { SessionArchive } from './SessionArchive.js';
 
 /**
  * Painel de sessão — a tela que o app abre por padrão, já que é onde a mesa
@@ -30,6 +31,9 @@ export function SessionScreen(): JSX.Element {
   const [party, setParty] = useState<PartySnapshot>({ players: [] });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Sobe a cada sessão encerrada, só pra fazer o arquivo recarregar — a lista
+  // dele é a única coisa na tela que muda por causa do `stop()`.
+  const [archived, setArchived] = useState(0);
   // Fechado por padrão: uma vez que a galera já entrou, o código/QR só
   // ocupam espaço que o grupo (o que o mestre olha o tempo todo) merece mais.
   // `start()` abre de novo sozinho, porque é exatamente quando ele faz falta.
@@ -96,6 +100,7 @@ export function SessionScreen(): JSX.Element {
       await dm.session.stop();
       setSession(null);
       setParty({ players: [] });
+      setArchived((count) => count + 1);
     } finally {
       setBusy(false);
     }
@@ -235,6 +240,8 @@ export function SessionScreen(): JSX.Element {
           </Card>
         ))}
       </div>
+
+      {!session && <SessionArchive reloadKey={archived} />}
 
       <OracleCard />
 
