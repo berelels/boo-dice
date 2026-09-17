@@ -182,31 +182,55 @@ describe('EncounterRepository', () => {
     expect(loaded?.combatants).toEqual([]);
   });
 
-  it('guarda bônus de acerto e dado de dano de um monstro, e persiste sem eles pros demais', async () => {
+  it('guarda a lista de ataques de um monstro, e persiste vazia pros demais', async () => {
     const encounter = await repo.create('Combate');
+    const dragao = await repo.addCombatant(encounter.id, {
+      name: 'Dragão vermelho jovem',
+      kind: 'monster',
+      initiative: 12,
+      hpMax: 178,
+      attacks: [
+        { name: 'Mordida', attackBonus: 10, damageDice: '2d10+6' },
+        { name: 'Garra', attackBonus: 10, damageDice: '2d6+6' },
+      ],
+    });
+    const hero = await repo.addCombatant(encounter.id, { name: 'Thorin', kind: 'pc', initiative: 18 });
+
+    expect(dragao.attacks).toHaveLength(2);
+    expect(hero.attacks).toEqual([]);
+
+    const loaded = await repo.get(encounter.id);
+    const loadedDragao = loaded?.combatants.find((c) => c.id === dragao.id);
+    expect(loadedDragao?.attacks).toEqual([
+      { name: 'Mordida', attackBonus: 10, damageDice: '2d10+6' },
+      { name: 'Garra', attackBonus: 10, damageDice: '2d6+6' },
+    ]);
+
+    const updated = await repo.updateCombatant(dragao.id, {
+      attacks: [{ name: 'Cauda', attackBonus: 10, damageDice: '2d8+6' }],
+    });
+    expect(updated.attacks).toEqual([{ name: 'Cauda', attackBonus: 10, damageDice: '2d8+6' }]);
+  });
+
+  it('lê como lista de um item o ataque de um encontro salvo antes da v3', async () => {
+    const encounter = await repo.create('Combate antigo');
     const goblin = await repo.addCombatant(encounter.id, {
       name: 'Goblin',
       kind: 'monster',
       initiative: 12,
       hpMax: 7,
-      attackBonus: 4,
-      damageDice: '1d6+2',
     });
-    const hero = await repo.addCombatant(encounter.id, { name: 'Thorin', kind: 'pc', initiative: 18 });
 
-    expect(goblin.attackBonus).toBe(4);
-    expect(goblin.damageDice).toBe('1d6+2');
-    expect(hero.attackBonus).toBeNull();
-    expect(hero.damageDice).toBeNull();
+    // Simula a linha como a v2 a gravava: colunas soltas preenchidas, lista nula.
+    await driver.execute(
+      'UPDATE combatants SET attacks = NULL, attack_bonus = ?, damage_dice = ? WHERE id = ?',
+      [4, '1d6+2', goblin.id],
+    );
 
     const loaded = await repo.get(encounter.id);
-    const loadedGoblin = loaded?.combatants.find((c) => c.id === goblin.id);
-    expect(loadedGoblin?.attackBonus).toBe(4);
-    expect(loadedGoblin?.damageDice).toBe('1d6+2');
-
-    const updated = await repo.updateCombatant(goblin.id, { attackBonus: 5, damageDice: '2d6' });
-    expect(updated.attackBonus).toBe(5);
-    expect(updated.damageDice).toBe('2d6');
+    expect(loaded?.combatants[0]?.attacks).toEqual([
+      { name: 'Ataque', attackBonus: 4, damageDice: '1d6+2' },
+    ]);
   });
 
   it('reordena combatentes explicitamente', async () => {

@@ -70,4 +70,19 @@ export const DM_MIGRATIONS: readonly Migration[] = [
       ALTER TABLE combatants ADD COLUMN damage_dice TEXT;
     `,
   },
+  {
+    version: 3,
+    name: 'lista-de-ataques-do-combatente',
+    // Um monstro raramente tem um ataque só (mordida, garra, cauda...), e o
+    // mestre precisa escolher qual usar na hora. As duas colunas da v2
+    // guardavam um único ataque; esta guarda a lista inteira como JSON.
+    //
+    // Sem backfill de propósito: `toCombatant` cai nas colunas antigas quando
+    // esta vem nula, então encontros salvos antes continuam com o ataque que
+    // já tinham. As colunas da v2 viram somente-leitura — ninguém escreve
+    // nelas a partir daqui, e o SQLite não gosta de remover coluna.
+    up: `
+      ALTER TABLE combatants ADD COLUMN attacks TEXT;
+    `,
+  },
 ];

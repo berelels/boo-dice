@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { CONDITION_DEFINITIONS } from '@dfo/core';
 import { SPRING_DEFAULT, haptic } from '@dfo/ui';
 import { useSession, type AttackEvent } from '../state/session.js';
 
@@ -48,6 +49,11 @@ export function AttackBanner(): JSX.Element | null {
             <span className="dfo-body">
               {event.hit ? `atacou ${event.character.name} — ${event.damage} PV` : `errou o ataque em ${event.character.name}`}
             </span>
+            {event.conditions.length > 0 && (
+              <span className="dfo-caption">
+                Você está: {event.conditions.map((id) => CONDITION_DEFINITIONS[id].label).join(', ')}
+              </span>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

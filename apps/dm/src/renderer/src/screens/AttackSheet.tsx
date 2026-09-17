@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
+  CONDITIONS,
+  CONDITION_DEFINITIONS,
   deriveCharacter,
   parseMonsterActions,
   roll,
   rollD20,
   type Character,
+  type ConditionId,
   type MonsterAction,
   type SearchHit,
 } from '@dfo/core';
@@ -22,11 +25,14 @@ interface RolledAttack {
   readonly damage: number;
 }
 
-/** Ataque já definido de antemão — vindo de um combatente do rastreador de Iniciativa, pula a busca/entrada manual. */
+/**
+ * Ataques já definidos de antemão — vindos de um combatente do rastreador de
+ * Iniciativa, pulam a busca/entrada manual. São vários porque um monstro
+ * raramente tem um ataque só: o mestre escolhe qual usar neste turno.
+ */
 export interface PresetAttack {
   readonly source: string;
-  readonly attackBonus: number;
-  readonly damageDice: string;
+  readonly actions: readonly MonsterAction[];
 }
 
 /**
@@ -54,8 +60,12 @@ export function AttackSheet({
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [monsterName, setMonsterName] = useState<string | null>(null);
-  const [actions, setActions] = useState<MonsterAction[]>([]);
-  const [selectedAction, setSelectedAction] = useState<MonsterAction | null>(null);
+  const [searchActions, setSearchActions] = useState<MonsterAction[]>([]);
+  // Guarda o *nome* do ataque escolhido, e não o objeto: a lista pode vir das
+  // props (rastreador) ou da busca, e casar por nome evita espelhar prop em
+  // estado — que é onde nascem os laços de re-render.
+  const [selectedName, setSelectedName] = useState<string | null>(null);
+  const [conditions, setConditions] = useState<ConditionId[]>([]);
 
   const [manualName, setManualName] = useState('Ataque manual');
   const [manualBonus, setManualBonus] = useState(4);
@@ -69,8 +79,9 @@ export function AttackSheet({
     setQuery('');
     setHits([]);
     setMonsterName(null);
-    setActions([]);
-    setSelectedAction(null);
+    setSearchActions([]);
+    setSelectedName(null);
+    setConditions([]);
     setRolled(null);
     setSent(false);
   };
@@ -100,26 +111,34 @@ export function AttackSheet({
     const entry = await dm.library.get(hit.id);
     const parsed = parseMonsterActions(entry?.data ?? null);
     setMonsterName(hit.title);
-    setActions(parsed);
-    setSelectedAction(parsed[0] ?? null);
+    setSearchActions(parsed);
+    setSelectedName(parsed[0]?.name ?? null);
     setRolled(null);
   };
 
+  const toggleCondition = (id: ConditionId): void =>
+    setConditions((current) =>
+      current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
+    );
+
+  // Os dois caminhos (rastreador e bestiário) terminam numa lista de ataques
+  // pra escolher; só a entrada manual foge disso.
+  const actions = presetAttack ? presetAttack.actions : searchActions;
+  const selectedAction = actions.find((action) => action.name === selectedName) ?? actions[0] ?? null;
+  const fromList = presetAttack !== undefined || mode === 'search';
+
+  // Com mais de um ataque, o jogador merece saber qual acertou nele — "Dragão
+  // vermelho jovem (Mordida)" diz muito mais que só o nome do bicho.
+  const withAction = (base: string): string =>
+    selectedAction && actions.length > 1 ? `${base} (${selectedAction.name})` : base;
+
   const source = presetAttack
-    ? presetAttack.source
+    ? withAction(presetAttack.source)
     : mode === 'search'
-      ? (monsterName ?? '')
+      ? withAction(monsterName ?? '')
       : manualName.trim() || 'Ataque manual';
-  const attackBonus = presetAttack
-    ? presetAttack.attackBonus
-    : mode === 'search'
-      ? (selectedAction?.attackBonus ?? null)
-      : manualBonus;
-  const damageDice = presetAttack
-    ? presetAttack.damageDice
-    : mode === 'search'
-      ? (selectedAction?.damageDice ?? null)
-      : manualDamage.trim();
+  const attackBonus = fromList ? (selectedAction?.attackBonus ?? null) : manualBonus;
+  const damageDice = fromList ? (selectedAction?.damageDice ?? null) : manualDamage.trim();
   const canRoll = attackBonus !== null && !!damageDice && !!character;
 
   const rollAttack = (): void => {
@@ -142,7 +161,8 @@ export function AttackSheet({
         source,
         hit: rolled.hit,
         damage: rolled.damage,
-        conditions: [],
+        // Ataque que errou não aplica condição — quem erra não envenena ninguém.
+        conditions: rolled.hit ? conditions : [],
       });
       setSent(true);
     } finally {
@@ -158,11 +178,7 @@ export function AttackSheet({
         <div className="attack-sheet">
           <p className="dfo-caption">CA de {character.name}: {targetAc}</p>
 
-          {presetAttack ? (
-            <p className="dfo-body">
-              {presetAttack.source}: +{presetAttack.attackBonus} para acertar, {presetAttack.damageDice} de dano
-            </p>
-          ) : (
+          {!presetAttack && (
             <SegmentedControl
               value={mode}
               onChange={(next) => {
@@ -176,7 +192,7 @@ export function AttackSheet({
             />
           )}
 
-          {!presetAttack && (mode === 'search' ? (
+          {!presetAttack && mode === 'search' && (
             <>
               <input
                 type="search"
@@ -187,8 +203,8 @@ export function AttackSheet({
                 onChange={(event) => {
                   setQuery(event.target.value);
                   setMonsterName(null);
-                  setActions([]);
-                  setSelectedAction(null);
+                  setSearchActions([]);
+                  setSelectedName(null);
                   setRolled(null);
                 }}
               />
@@ -203,32 +219,16 @@ export function AttackSheet({
                 </div>
               )}
 
-              {monsterName !== null && actions.length === 0 && (
+              {monsterName !== null && searchActions.length === 0 && (
                 <EmptyState
                   title="Sem ataque cadastrado"
                   description={`${monsterName} não tem bônus de acerto e dado de dano no bestiário — use o modo manual.`}
                 />
               )}
-
-              {monsterName !== null && actions.length > 0 && (
-                <div className="attack-sheet__actions">
-                  {actions.map((action) => (
-                    <Tappable
-                      as="div"
-                      key={action.name}
-                      className={`chip-button${selectedAction?.name === action.name ? ' is-active' : ''}`}
-                      onTap={() => {
-                        setSelectedAction(action);
-                        setRolled(null);
-                      }}
-                    >
-                      {action.name} (+{action.attackBonus}, {action.damageDice})
-                    </Tappable>
-                  ))}
-                </div>
-              )}
             </>
-          ) : (
+          )}
+
+          {!presetAttack && mode === 'manual' && (
             <>
               <Field label="Nome">
                 <input
@@ -267,7 +267,42 @@ export function AttackSheet({
                 </Field>
               </div>
             </>
-          ))}
+          )}
+
+          {/* Escolha do ataque — igual venha do rastreador ou da busca. */}
+          {actions.length > 0 && (
+            <Field label={actions.length > 1 ? 'Qual ataque' : 'Ataque'}>
+              <div className="attack-sheet__actions">
+                {actions.map((action) => (
+                  <Tappable
+                    as="div"
+                    key={action.name}
+                    className={`chip-button${selectedAction?.name === action.name ? ' is-active' : ''}`}
+                    onTap={() => {
+                      setSelectedName(action.name);
+                      setRolled(null);
+                    }}
+                  >
+                    {action.name} (+{action.attackBonus}, {action.damageDice})
+                  </Tappable>
+                ))}
+              </div>
+            </Field>
+          )}
+
+          <Field label="Condições ao acertar (opcional)">
+            <div className="attack-sheet__conditions">
+              {CONDITIONS.map((id) => (
+                <Chip
+                  key={id}
+                  tone={conditions.includes(id) ? 'danger' : 'neutral'}
+                  onTap={() => toggleCondition(id)}
+                >
+                  {CONDITION_DEFINITIONS[id].label}
+                </Chip>
+              ))}
+            </div>
+          </Field>
 
           <Button variant="secondary" full disabled={!canRoll} onTap={rollAttack}>
             Rolar ataque
@@ -281,6 +316,14 @@ export function AttackSheet({
                 {rolled.attackBonus} = {rolled.hitRoll})
               </div>
               {rolled.hit && <div className="dfo-body">{rolled.damage} de dano</div>}
+              {rolled.hit && conditions.length > 0 && (
+                <div className="dfo-caption">
+                  Aplica: {conditions.map((id) => CONDITION_DEFINITIONS[id].label).join(', ')}
+                </div>
+              )}
+              {!rolled.hit && conditions.length > 0 && (
+                <div className="dfo-caption">Errou — nenhuma condição será aplicada.</div>
+              )}
               <Button variant="primary" full disabled={sending || sent} onTap={() => void send()}>
                 {sent ? 'Enviado' : sending ? 'Enviando…' : 'Enviar pro jogador'}
               </Button>

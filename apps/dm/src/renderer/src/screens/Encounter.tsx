@@ -57,12 +57,8 @@ export function EncounterScreen({
   };
 
   const presetAttack: PresetAttack | null =
-    attackCombatant?.attackBonus != null && attackCombatant.damageDice != null
-      ? {
-          source: attackCombatant.name,
-          attackBonus: attackCombatant.attackBonus,
-          damageDice: attackCombatant.damageDice,
-        }
+    attackCombatant && attackCombatant.attacks.length > 0
+      ? { source: attackCombatant.name, actions: attackCombatant.attacks }
       : null;
 
   return (
@@ -98,7 +94,7 @@ export function EncounterScreen({
 
       <div className="encounter__list">
         {encounter.combatants.map((combatant) => {
-          const canAttack = combatant.kind === 'monster' && combatant.attackBonus != null && combatant.damageDice != null;
+          const canAttack = combatant.kind === 'monster' && combatant.attacks.length > 0;
           return (
             <Card
               key={combatant.id}

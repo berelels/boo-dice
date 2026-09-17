@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { applyDamage, serverMessageSchema, type Character } from '@dfo/core';
+import { applyDamage, serverMessageSchema, type Character, type ConditionId } from '@dfo/core';
 import { useAppData } from '../db/provider.js';
 
 /**
@@ -31,6 +31,8 @@ export interface AttackEvent {
   readonly source: string;
   readonly hit: boolean;
   readonly damage: number;
+  /** Só o que *este* ataque aplicou — não o conjunto todo que o personagem carrega. */
+  readonly conditions: readonly ConditionId[];
 }
 
 interface SessionApi {
@@ -147,6 +149,7 @@ export function SessionProvider({ children }: { children: ReactNode }): JSX.Elem
               source: message.source,
               hit: message.hit,
               damage: message.damage,
+              conditions: message.conditions,
             };
             for (const listener of attackListeners.current) listener(event);
           })();

@@ -59,11 +59,9 @@ export function CombatantForm({
   const [amount, setAmount] = useState(0);
 
   // Só usados em modo "adicionar" + tipo Monstro — busca no bestiário pra
-  // pré-preencher nome/PV/CA/ataque, em vez de digitar tudo às cegas.
+  // pré-preencher nome/PV/CA/ataques, em vez de digitar tudo às cegas.
   const [monsterQuery, setMonsterQuery] = useState('');
   const [monsterHits, setMonsterHits] = useState<SearchHit[]>([]);
-  const [attackBonus, setAttackBonus] = useState<number | null>(null);
-  const [damageDice, setDamageDice] = useState<string | null>(null);
   const [monsterActions, setMonsterActions] = useState<MonsterAction[]>([]);
 
   const searchMonsters = (value: string): void => {
@@ -77,15 +75,13 @@ export function CombatantForm({
 
   const pickMonster = async (hit: SearchHit): Promise<void> => {
     const entry = await dm.library.get(hit.id);
-    const parsedActions = parseMonsterActions(entry?.data ?? null);
-    const firstAction = parsedActions[0] ?? null;
 
     setName(hit.title);
     setHpMax(numberField(entry?.data, 'hitPoints') ?? hpMax);
     setArmorClass(String(numberField(entry?.data, 'armorClass') ?? armorClass));
-    setMonsterActions(parsedActions);
-    setAttackBonus(firstAction?.attackBonus ?? null);
-    setDamageDice(firstAction?.damageDice ?? null);
+    // Todos os ataques, não só o primeiro: é o mestre que escolhe qual usar
+    // em cada turno, na hora de atacar.
+    setMonsterActions(parseMonsterActions(entry?.data ?? null));
     setMonsterHits([]);
     setMonsterQuery(hit.title);
   };
@@ -125,10 +121,16 @@ export function CombatantForm({
               </div>
             )}
             {monsterActions.length > 0 && (
-              <p className="dfo-caption">
-                Ataque: +{attackBonus} para acertar, {damageDice} de dano
-                {monsterActions.length > 1 ? ` (${monsterActions[0]!.name}, entre ${monsterActions.length})` : ''}
-              </p>
+              <div className="combatant-form__attacks">
+                <span className="dfo-caption">
+                  {monsterActions.length === 1 ? 'Ataque encontrado:' : `${monsterActions.length} ataques encontrados:`}
+                </span>
+                {monsterActions.map((action) => (
+                  <span key={action.name} className="dfo-caption">
+                    {action.name}: +{action.attackBonus} para acertar, {action.damageDice} de dano
+                  </span>
+                ))}
+              </div>
             )}
           </Field>
         )}
@@ -182,8 +184,7 @@ export function CombatantForm({
               initiative,
               hpMax,
               armorClass: parsedArmorClass,
-              attackBonus: kind === 'monster' ? attackBonus : null,
-              damageDice: kind === 'monster' ? damageDice : null,
+              attacks: kind === 'monster' ? monsterActions : [],
             })
           }
         >
@@ -246,6 +247,18 @@ export function CombatantForm({
           />
         </Field>
       </div>
+
+      {existing.attacks.length > 0 && (
+        <Field label="Ataques">
+          <div className="combatant-form__attacks">
+            {existing.attacks.map((action) => (
+              <span key={action.name} className="dfo-caption">
+                {action.name}: +{action.attackBonus} para acertar, {action.damageDice} de dano
+              </span>
+            ))}
+          </div>
+        </Field>
+      )}
 
       <Field label="Condições">
         <div className="combatant-form__conditions">

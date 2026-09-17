@@ -32,6 +32,30 @@ export interface MonsterAction {
   readonly damageDice: string;
 }
 
+const monsterActionSchema = z.object({
+  name: z.string(),
+  attackBonus: z.number(),
+  damageDice: z.string(),
+});
+
+/**
+ * Lê a lista de ataques gravada num combatente do rastreador.
+ *
+ * É JSON vindo do banco, não de código — um encontro salvo por uma versão
+ * antiga, ou editado à mão, não pode derrubar a tela do encontro inteira.
+ * Qualquer coisa fora do formato vira lista vazia, que a UI já trata (o
+ * combatente simplesmente não ganha o botão de atacar).
+ */
+export function parseStoredAttacks(json: string | null): MonsterAction[] {
+  if (!json) return [];
+  try {
+    const parsed = z.array(monsterActionSchema).safeParse(JSON.parse(json));
+    return parsed.success ? parsed.data : [];
+  } catch {
+    return [];
+  }
+}
+
 /** Extrai as ações com dado de ataque de um `CatalogEntry.data` de monstro. */
 export function parseMonsterActions(data: unknown): MonsterAction[] {
   if (typeof data !== 'object' || data === null || !('actions' in data)) return [];

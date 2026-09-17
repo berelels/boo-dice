@@ -252,6 +252,14 @@
   gap: var(--space-1);
 }
 
+/* Lista de ataques do bestiário: uma linha por ataque, pra dar pra conferir
+   antes de adicionar o monstro. */
+.combatant-form__attacks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
 .combatant-form__monster-hits {
   display: flex;
   flex-direction: column;
@@ -478,6 +486,12 @@
 .attack-sheet__actions {
   flex-direction: row;
   flex-wrap: wrap;
+}
+
+.attack-sheet__conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
 }
 
 .attack-sheet__result {
