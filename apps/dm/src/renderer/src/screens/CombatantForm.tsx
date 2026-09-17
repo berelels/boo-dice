@@ -3,10 +3,13 @@ import {
   CONDITIONS,
   CONDITION_DEFINITIONS,
   parseMonsterActions,
+  roundsLeft,
+  timerFor,
   type Combatant,
   type CombatantKind,
   type CombatantPatch,
   type ConditionId,
+  type ConditionTimer,
   type MonsterAction,
   type NewCombatantInput,
   type SearchHit,
@@ -34,14 +37,19 @@ function numberField(data: unknown, key: string): number | null {
  * mestre mais usa, em combate), o resto (nome, iniciativa, CA, notas,
  * condições) junta num só "Salvar" — não há por que interromper o jogo pra
  * cada campo.
+ *
+ * `round` é a rodada atual do encontro: a duração das condições aparece aqui
+ * em "quantas rodadas faltam", que só faz sentido contra ela.
  */
 export function CombatantForm({
   existing,
+  round,
   onAdd,
   onSave,
   onRemove,
 }: {
   existing: Combatant | null;
+  round: number;
   onAdd: (input: NewCombatantInput) => void;
   onSave: (patch: CombatantPatch) => void;
   onRemove: () => void;
@@ -56,6 +64,7 @@ export function CombatantForm({
   );
   const [notes, setNotes] = useState(existing?.notes ?? '');
   const [conditions, setConditions] = useState<ConditionId[]>([...(existing?.conditions ?? [])]);
+  const [timers, setTimers] = useState<ConditionTimer[]>([...(existing?.timers ?? [])]);
   const [amount, setAmount] = useState(0);
 
   // Só usados em modo "adicionar" + tipo Monstro — busca no bestiário pra
@@ -90,6 +99,24 @@ export function CombatantForm({
     setConditions((current) =>
       current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
     );
+    // Tirar a condição leva o prazo junto: um prazo órfão reapareceria com a
+    // condição se o mestre a marcasse de novo, ainda contando do primeiro dia.
+    setTimers((current) => current.filter((timer) => timer.id !== id));
+  };
+
+  /** Vazio = sem prazo, vale até o mestre tirar. */
+  const durationOf = (id: ConditionId): string => {
+    const timer = timers.find((entry) => entry.id === id);
+    return timer ? String(roundsLeft(timer, round)) : '';
+  };
+
+  const setDuration = (id: ConditionId, raw: string): void => {
+    const rounds = Number(raw);
+    setTimers((current) => {
+      const rest = current.filter((timer) => timer.id !== id);
+      if (raw.trim() === '' || !Number.isFinite(rounds) || rounds < 1) return rest;
+      return [...rest, timerFor(id, rounds, round)];
+    });
   };
 
   const parsedArmorClass = armorClass.trim() === '' ? null : Number(armorClass);
@@ -274,6 +301,31 @@ export function CombatantForm({
         </div>
       </Field>
 
+      {conditions.length > 0 && (
+        <Field label="Quanto tempo dura">
+          <div className="combatant-form__durations">
+            {conditions.map((id) => (
+              <label key={id} className="combatant-form__duration">
+                <span className="dfo-body">{CONDITION_DEFINITIONS[id].label}</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  placeholder="—"
+                  value={durationOf(id)}
+                  onChange={(event) => setDuration(id, event.target.value)}
+                  aria-label={`Duração de ${CONDITION_DEFINITIONS[id].label} em rodadas`}
+                />
+                <span className="dfo-caption">rodadas</span>
+              </label>
+            ))}
+          </div>
+          <span className="dfo-caption">
+            Em branco dura até você tirar. Com prazo, ela some sozinha quando a rodada chegar.
+          </span>
+        </Field>
+      )}
+
       <Field label="Notas">
         <textarea
           value={notes}
@@ -293,6 +345,7 @@ export function CombatantForm({
             armorClass: parsedArmorClass,
             notes,
             conditions,
+            timers,
           })
         }
       >

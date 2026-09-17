@@ -85,4 +85,18 @@ export const DM_MIGRATIONS: readonly Migration[] = [
       ALTER TABLE combatants ADD COLUMN attacks TEXT;
     `,
   },
+  {
+    version: 4,
+    name: 'prazo-das-condicoes',
+    // Quanto tempo cada condição ainda vale, em rodadas. JSON de
+    // `{ id, endsAfterRound }` (ver `conditionTimers.ts`) — rodada em que
+    // acaba, não quantas faltam, pra "Anterior" desfazer sem restaurar nada.
+    //
+    // Nula em tudo que já existe, e nula quer dizer "vale até o mestre
+    // tirar" — exatamente o comportamento de antes, então encontros no meio
+    // de uma sessão não mudam de regra na troca de versão.
+    up: `
+      ALTER TABLE combatants ADD COLUMN condition_timers TEXT;
+    `,
+  },
 ];

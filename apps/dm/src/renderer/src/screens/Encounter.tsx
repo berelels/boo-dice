@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import {
+  CONDITION_DEFINITIONS,
+  roundsLeft,
   sortByInitiative,
   type Character,
   type Combatant,
+  type ConditionId,
   type EncounterWithCombatants,
   type PartySnapshot,
 } from '@dfo/core';
@@ -12,6 +15,19 @@ import { CombatantForm } from './CombatantForm.js';
 import { AttackSheet, type PresetAttack } from './AttackSheet.js';
 
 const KIND_LABELS = { pc: 'Jogador', npc: 'NPC', monster: 'Monstro' } as const;
+
+/** "Envenenado · 2 rodadas" — sem prazo, só o nome. */
+function conditionLabel(
+  combatant: Combatant,
+  condition: ConditionId,
+  round: number,
+): string {
+  const label = CONDITION_DEFINITIONS[condition].label;
+  const timer = combatant.timers.find((entry) => entry.id === condition);
+  if (!timer) return label;
+  const left = roundsLeft(timer, round);
+  return `${label} · ${left} ${left === 1 ? 'rodada' : 'rodadas'}`;
+}
 
 export function EncounterScreen({
   encounterId,
@@ -122,7 +138,7 @@ export function EncounterScreen({
                     <div className="combatant-row__conditions">
                       {combatant.conditions.map((condition) => (
                         <Chip key={condition} tone="danger">
-                          {condition}
+                          {conditionLabel(combatant, condition, encounter.round)}
                         </Chip>
                       ))}
                     </div>
@@ -154,6 +170,7 @@ export function EncounterScreen({
         {formTarget && (
           <CombatantForm
             existing={formTarget === 'new' ? null : formTarget}
+            round={encounter.round}
             onAdd={(input) => {
               void dm.combatants.add(encounterId, input).then(() => {
                 closeForm();

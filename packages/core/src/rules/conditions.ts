@@ -133,17 +133,21 @@ export const CONDITION_DEFINITIONS: Readonly<Record<ConditionId, ConditionDefini
 /**
  * Expande as condições implicadas. Marcar "Inconsciente" na ficha deve acender
  * "Incapacitado" e "Caído" junto — quem esquece disso erra a regra na mesa.
+ *
+ * Sai sempre na ordem de `CONDITIONS`, não na ordem em que foram marcadas: o
+ * resultado costuma ser gravado e relido, e ordem instável faria os chips da
+ * ficha trocarem de lugar a cada vez que o usuário salva.
  */
 export function expandConditions(active: Iterable<ConditionId>): Set<ConditionId> {
-  const result = new Set<ConditionId>();
+  const found = new Set<ConditionId>();
   const queue = [...active];
   while (queue.length > 0) {
     const condition = queue.pop()!;
-    if (result.has(condition)) continue;
-    result.add(condition);
+    if (found.has(condition)) continue;
+    found.add(condition);
     queue.push(...CONDITION_DEFINITIONS[condition].implies);
   }
-  return result;
+  return new Set(CONDITIONS.filter((id) => found.has(id)));
 }
 
 // ---------------------------------------------------------------------------

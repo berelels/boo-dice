@@ -252,6 +252,31 @@
   gap: var(--space-1);
 }
 
+/* Uma linha por condição ativa: nome, quantas rodadas faltam, unidade. O
+   campo fica estreito de propósito — é sempre um número de um ou dois
+   dígitos, e o nome da condição é o que precisa ficar legível. */
+.combatant-form__durations {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.combatant-form__duration {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.combatant-form__duration > span:first-child {
+  flex: 1 1 auto;
+}
+
+.combatant-form__duration input {
+  flex: 0 0 4.5rem;
+  text-align: center;
+}
+
 /* Lista de ataques do bestiário: uma linha por ataque, pra dar pra conferir
    antes de adicionar o monstro. */
 .combatant-form__attacks {

@@ -410,6 +410,23 @@ describe('condições', () => {
     expect(expandConditions(['paralyzed', 'incapacitated']).size).toBe(2);
   });
 
+  it('sai sempre na mesma ordem, não na ordem em que foi marcada', () => {
+    // Senão os chips da ficha trocam de lugar a cada vez que o usuário salva.
+    expect([...expandConditions(['poisoned', 'frightened'])]).toEqual([
+      'frightened',
+      'poisoned',
+    ]);
+    expect([...expandConditions(['frightened', 'poisoned'])]).toEqual([
+      'frightened',
+      'poisoned',
+    ]);
+    expect([...expandConditions(['unconscious'])]).toEqual([
+      'incapacitated',
+      'prone',
+      'unconscious',
+    ]);
+  });
+
   it('acumula os efeitos de exaustão', () => {
     expect(exhaustionEffects(0)).toEqual([]);
     expect(exhaustionEffects(3)).toHaveLength(3);

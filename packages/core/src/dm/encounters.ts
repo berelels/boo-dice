@@ -5,6 +5,11 @@ import {
   type HitPoints,
 } from '../rules/combat.js';
 import { expandConditions, type ConditionId } from '../rules/conditions.js';
+import {
+  expireConditions,
+  parseStoredTimers,
+  type ConditionTimer,
+} from './conditionTimers.js';
 import { parseStoredAttacks, type MonsterAction } from './monsterActions.js';
 import type { SqlDriver } from '../db/driver.js';
 
@@ -38,7 +43,13 @@ export interface Combatant {
   readonly sortOrder: number;
   readonly hp: HitPoints;
   readonly armorClass: number | null;
+  /** Já sem o que venceu: quem lê um combatente lê a verdade da rodada atual. */
   readonly conditions: readonly ConditionId[];
+  /**
+   * Prazo das condições que têm um. Condição sem prazo aqui vale até o mestre
+   * tirar na mão — a maioria é assim, e quem some sozinha é a exceção.
+   */
+  readonly timers: readonly ConditionTimer[];
   readonly notes: string;
   /**
    * Ataques disponíveis — normalmente vêm do bestiário, ao escolher o monstro.
@@ -75,6 +86,8 @@ export interface CombatantPatch {
   readonly temporaryHp?: number;
   /** Conjunto de condições ativas; expandido automaticamente (marcar "Inconsciente" acende "Incapacitado"+"Caído"). */
   readonly conditions?: readonly ConditionId[];
+  /** Prazos; só vale pra condição que está em `conditions`, o resto é descartado. */
+  readonly timers?: readonly ConditionTimer[];
   readonly attacks?: readonly MonsterAction[];
 }
 
@@ -145,6 +158,7 @@ interface CombatantRow {
   hp_temp: number;
   armor_class: number | null;
   conditions: string;
+  condition_timers: string | null;
   notes: string;
   attacks: string | null;
   /** Colunas da v2, mantidas só pra ler encontros salvos antes da lista de ataques. */
@@ -163,7 +177,14 @@ function toEncounter(row: EncounterRow): Encounter {
   };
 }
 
-function toCombatant(row: CombatantRow): Combatant {
+/**
+ * `round` é a rodada atual do encontro: é ela que decide o que já venceu.
+ * Sem esse número não dá pra dizer se uma condição ainda vale, então ele é
+ * obrigatório — não há leitura de combatente "fora do tempo".
+ */
+function toCombatant(row: CombatantRow, round: number): Combatant {
+  const stored = JSON.parse(row.conditions) as ConditionId[];
+  const current = expireConditions(stored, parseStoredTimers(row.condition_timers), round);
   return {
     id: row.id,
     encounterId: row.encounter_id,
@@ -173,7 +194,8 @@ function toCombatant(row: CombatantRow): Combatant {
     sortOrder: row.sort_order,
     hp: { current: row.hp_current, max: row.hp_max, temporary: row.hp_temp },
     armorClass: row.armor_class,
-    conditions: JSON.parse(row.conditions) as ConditionId[],
+    conditions: current.conditions,
+    timers: current.timers,
     notes: row.notes,
     attacks: readAttacks(row),
   };
@@ -230,7 +252,10 @@ export class EncounterRepository {
       'SELECT * FROM combatants WHERE encounter_id = ? ORDER BY sort_order',
       [id],
     );
-    return { ...toEncounter(row), combatants: combatantRows.map(toCombatant) };
+    return {
+      ...toEncounter(row),
+      combatants: combatantRows.map((combatantRow) => toCombatant(combatantRow, row.round)),
+    };
   }
 
   async rename(id: string, name: string): Promise<void> {
@@ -261,14 +286,15 @@ export class EncounterRepository {
       hp: { current: hpMax, max: hpMax, temporary: 0 },
       armorClass: input.armorClass ?? null,
       conditions: [],
+      timers: [],
       notes: input.notes ?? '',
       attacks: input.attacks ?? [],
     };
 
     await this.driver.execute(
       `INSERT INTO combatants
-         (id, encounter_id, name, kind, initiative, sort_order, hp_current, hp_max, hp_temp, armor_class, conditions, notes, attacks)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, encounter_id, name, kind, initiative, sort_order, hp_current, hp_max, hp_temp, armor_class, conditions, condition_timers, notes, attacks)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         combatant.id,
         combatant.encounterId,
@@ -281,6 +307,7 @@ export class EncounterRepository {
         combatant.hp.temporary,
         combatant.armorClass,
         JSON.stringify(combatant.conditions),
+        JSON.stringify(combatant.timers),
         combatant.notes,
         JSON.stringify(combatant.attacks),
       ],
@@ -290,13 +317,19 @@ export class EncounterRepository {
   }
 
   async updateCombatant(id: string, patch: CombatantPatch): Promise<Combatant> {
-    const row = await this.driver.queryOne<CombatantRow>(
-      'SELECT * FROM combatants WHERE id = ?',
+    // A rodada vem junto no mesmo SELECT: sem ela não dá pra dizer quais
+    // condições ainda valem, e uma segunda consulta só pra isso abriria uma
+    // janela pro turno virar no meio da edição.
+    const row = await this.driver.queryOne<CombatantRow & { round: number }>(
+      `SELECT c.*, e.round AS round
+         FROM combatants c
+         JOIN encounters e ON e.id = c.encounter_id
+        WHERE c.id = ?`,
       [id],
     );
     if (!row) throw new Error(`Combatente "${id}" não encontrado.`);
 
-    let combatant = toCombatant(row);
+    let combatant = toCombatant(row, row.round);
 
     if (patch.damage !== undefined) {
       combatant = { ...combatant, hp: applyDamage(combatant.hp, patch.damage).hitPoints };
@@ -310,16 +343,22 @@ export class EncounterRepository {
     if (patch.conditions !== undefined) {
       combatant = { ...combatant, conditions: [...expandConditions(patch.conditions)] };
     }
+    if (patch.timers !== undefined) combatant = { ...combatant, timers: patch.timers };
     if (patch.name !== undefined) combatant = { ...combatant, name: patch.name };
     if (patch.initiative !== undefined) combatant = { ...combatant, initiative: patch.initiative };
     if (patch.armorClass !== undefined) combatant = { ...combatant, armorClass: patch.armorClass };
     if (patch.notes !== undefined) combatant = { ...combatant, notes: patch.notes };
     if (patch.attacks !== undefined) combatant = { ...combatant, attacks: patch.attacks };
 
+    // De novo no fim: o mestre pode ter acabado de tirar uma condição na mão,
+    // ou marcado um prazo que já nasceu vencido. Grava só o que vale.
+    const current = expireConditions(combatant.conditions, combatant.timers, row.round);
+    combatant = { ...combatant, conditions: current.conditions, timers: current.timers };
+
     await this.driver.execute(
       `UPDATE combatants SET
          name = ?, kind = ?, initiative = ?, hp_current = ?, hp_max = ?, hp_temp = ?,
-         armor_class = ?, conditions = ?, notes = ?, attacks = ?
+         armor_class = ?, conditions = ?, condition_timers = ?, notes = ?, attacks = ?
        WHERE id = ?`,
       [
         combatant.name,
@@ -330,6 +369,7 @@ export class EncounterRepository {
         combatant.hp.temporary,
         combatant.armorClass,
         JSON.stringify(combatant.conditions),
+        JSON.stringify(combatant.timers),
         combatant.notes,
         JSON.stringify(combatant.attacks),
         combatant.id,

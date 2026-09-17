@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { classSummary, deriveCharacter, type Character, type PartySnapshot } from '@dfo/core';
+import {
+  CONDITION_DEFINITIONS,
+  classSummary,
+  deriveCharacter,
+  type Character,
+  type PartySnapshot,
+} from '@dfo/core';
 import { Button, Card, Chip, EmptyState, Tappable } from '@dfo/ui';
 import { useDmApi } from '../db/useDmApi.js';
 import type { SessionStatus } from '../../../shared/ipc.js';
@@ -210,7 +216,7 @@ export function SessionScreen(): JSX.Element {
                         <div className="combatant-row__conditions">
                           {character.conditions.map((condition) => (
                             <Chip key={condition} tone="danger">
-                              {condition}
+                              {CONDITION_DEFINITIONS[condition].label}
                             </Chip>
                           ))}
                         </div>

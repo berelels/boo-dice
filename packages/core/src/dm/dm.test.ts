@@ -5,6 +5,12 @@ import { DM_MIGRATIONS } from './migrations.js';
 import { EncounterRepository, advanceTurn, sortByInitiative, type Combatant } from './encounters.js';
 import { NotesRepository } from './notes.js';
 import { parseMonsterActions } from './monsterActions.js';
+import {
+  expireConditions,
+  parseStoredTimers,
+  roundsLeft,
+  timerFor,
+} from './conditionTimers.js';
 import { CATALOG_SCHEMA, CATALOG_REBUILD } from '../search/schema.js';
 import { RulesSearch } from '../search/rules-search.js';
 import { RulesLibrary } from '../search/library.js';
@@ -210,6 +216,115 @@ describe('EncounterRepository', () => {
       attacks: [{ name: 'Cauda', attackBonus: 10, damageDice: '2d8+6' }],
     });
     expect(updated.attacks).toEqual([{ name: 'Cauda', attackBonus: 10, damageDice: '2d8+6' }]);
+  });
+
+  it('conta o prazo da condição a partir da rodada do encontro', async () => {
+    const encounter = await repo.create('Combate');
+    const goblin = await repo.addCombatant(encounter.id, {
+      name: 'Goblin', kind: 'monster', initiative: 12, hpMax: 7,
+    });
+    await repo.addCombatant(encounter.id, { name: 'Thorin', kind: 'pc', initiative: 18 });
+
+    // Rodada 1: envenenado por 2 rodadas, e amedrontado sem prazo nenhum.
+    const poisoned = await repo.updateCombatant(goblin.id, {
+      conditions: ['poisoned', 'frightened'],
+      timers: [timerFor('poisoned', 2, 1)],
+    });
+    expect(new Set(poisoned.conditions)).toEqual(new Set(['poisoned', 'frightened']));
+
+    const roundOf = async (): Promise<number> => (await repo.get(encounter.id))!.round;
+    const goblinNow = async (): Promise<Combatant> => {
+      const loaded = await repo.get(encounter.id);
+      return loaded!.combatants.find((c) => c.id === goblin.id)!;
+    };
+
+    // Uma volta inteira na ordem de iniciativa é o que vira a rodada.
+    await repo.advance(encounter.id, 'next');
+    await repo.advance(encounter.id, 'next');
+    await repo.advance(encounter.id, 'next');
+    expect(await roundOf()).toBe(2);
+
+    const onRoundTwo = await goblinNow();
+    expect(new Set(onRoundTwo.conditions)).toEqual(new Set(['poisoned', 'frightened']));
+    expect(roundsLeft(onRoundTwo.timers[0]!, 2)).toBe(1);
+
+    await repo.advance(encounter.id, 'next');
+    await repo.advance(encounter.id, 'next');
+    expect(await roundOf()).toBe(3);
+
+    // Venceu: sai sozinho. O que não tinha prazo fica.
+    const onRoundThree = await goblinNow();
+    expect(onRoundThree.conditions).toEqual(['frightened']);
+    expect(onRoundThree.timers).toEqual([]);
+  });
+
+  it('voltar a rodada devolve a condição que tinha acabado', async () => {
+    const encounter = await repo.create('Combate');
+    const goblin = await repo.addCombatant(encounter.id, {
+      name: 'Goblin', kind: 'monster', initiative: 12, hpMax: 7,
+    });
+    await repo.updateCombatant(goblin.id, {
+      conditions: ['poisoned'],
+      timers: [timerFor('poisoned', 1, 1)],
+    });
+
+    await repo.advance(encounter.id, 'next');
+    await repo.advance(encounter.id, 'next');
+    expect((await repo.get(encounter.id))?.round).toBe(2);
+    expect((await repo.get(encounter.id))?.combatants[0]?.conditions).toEqual([]);
+
+    // "Anterior" é o desfazer do clique errado — e desfaz a expiração junto,
+    // porque nada foi apagado: o prazo é uma rodada absoluta.
+    await repo.advance(encounter.id, 'previous');
+    const back = await repo.get(encounter.id);
+    expect(back?.round).toBe(1);
+    expect(back?.combatants[0]?.conditions).toEqual(['poisoned']);
+  });
+
+  it('condição sem prazo continua valendo rodada após rodada', async () => {
+    const encounter = await repo.create('Combate');
+    const goblin = await repo.addCombatant(encounter.id, {
+      name: 'Goblin', kind: 'monster', initiative: 12, hpMax: 7,
+    });
+    await repo.updateCombatant(goblin.id, { conditions: ['grappled'] });
+
+    for (let i = 0; i < 20; i += 1) await repo.advance(encounter.id, 'next');
+
+    const loaded = await repo.get(encounter.id);
+    expect(loaded?.round).toBeGreaterThan(5);
+    expect(loaded?.combatants[0]?.conditions).toEqual(['grappled']);
+  });
+
+  it('tirar a condição na mão descarta o prazo dela', async () => {
+    const encounter = await repo.create('Combate');
+    const goblin = await repo.addCombatant(encounter.id, {
+      name: 'Goblin', kind: 'monster', initiative: 12, hpMax: 7,
+    });
+    await repo.updateCombatant(goblin.id, {
+      conditions: ['poisoned'],
+      timers: [timerFor('poisoned', 5, 1)],
+    });
+
+    const cleared = await repo.updateCombatant(goblin.id, { conditions: [] });
+    expect(cleared.conditions).toEqual([]);
+    expect(cleared.timers).toEqual([]);
+  });
+
+  it('lê sem prazo nenhum um combatente salvo antes da v4', async () => {
+    const encounter = await repo.create('Combate antigo');
+    const goblin = await repo.addCombatant(encounter.id, {
+      name: 'Goblin', kind: 'monster', initiative: 12, hpMax: 7,
+    });
+    await repo.updateCombatant(goblin.id, { conditions: ['poisoned'] });
+
+    // Como a v3 gravava: condições sim, coluna de prazos inexistente.
+    await driver.execute('UPDATE combatants SET condition_timers = NULL WHERE id = ?', [goblin.id]);
+
+    for (let i = 0; i < 10; i += 1) await repo.advance(encounter.id, 'next');
+
+    const loaded = await repo.get(encounter.id);
+    expect(loaded?.combatants[0]?.conditions).toEqual(['poisoned']);
+    expect(loaded?.combatants[0]?.timers).toEqual([]);
   });
 
   it('lê como lista de um item o ataque de um encontro salvo antes da v3', async () => {
@@ -432,5 +547,60 @@ describe('RulesLibrary', () => {
     const hits = await withBook.search('truque');
     expect(hits.map((hit) => hit.id)).not.toContain('srd:spell:fire-bolt');
     expect(hits.map((hit) => hit.id)).toContain('book:spell:raio-de-fogo');
+  });
+});
+
+describe('prazo das condições', () => {
+  it('conta a rodada atual como uma das que faltam', () => {
+    const timer = timerFor('poisoned', 3, 5);
+    expect(timer).toEqual({ id: 'poisoned', endsAfterRound: 7 });
+    expect(roundsLeft(timer, 5)).toBe(3);
+    expect(roundsLeft(timer, 7)).toBe(1);
+    expect(roundsLeft(timer, 8)).toBe(0);
+  });
+
+  it('"1 rodada" vale na rodada em que foi marcada e some na seguinte', () => {
+    const timer = timerFor('prone', 1, 4);
+    expect(expireConditions(['prone'], [timer], 4).conditions).toEqual(['prone']);
+    expect(expireConditions(['prone'], [timer], 5).conditions).toEqual([]);
+  });
+
+  it('a condição que vence leva junto as que só existiam por causa dela', () => {
+    // "Inconsciente" acende "Incapacitado" e "Caído"; acordar devolve os três.
+    const timer = timerFor('unconscious', 1, 1);
+    const result = expireConditions(
+      ['unconscious', 'incapacitated', 'prone'],
+      [timer],
+      2,
+    );
+    expect(result.conditions).toEqual([]);
+    expect(result.timers).toEqual([]);
+  });
+
+  it('mas não leva o que outra condição ativa ainda implica', () => {
+    // Paralisado também implica incapacitado — esse fica; caído, não.
+    const result = expireConditions(
+      ['unconscious', 'paralyzed', 'incapacitated', 'prone'],
+      [timerFor('unconscious', 1, 1)],
+      2,
+    );
+    expect(new Set(result.conditions)).toEqual(new Set(['paralyzed', 'incapacitated']));
+  });
+
+  it('descarta prazo de condição que não está mais ativa', () => {
+    const result = expireConditions(['poisoned'], [timerFor('blinded', 5, 1)], 1);
+    expect(result.conditions).toEqual(['poisoned']);
+    expect(result.timers).toEqual([]);
+  });
+
+  it('lê o que está gravado e ignora lixo', () => {
+    expect(parseStoredTimers(null)).toEqual([]);
+    expect(parseStoredTimers('[]')).toEqual([]);
+    expect(parseStoredTimers('{isso não é json')).toEqual([]);
+    expect(parseStoredTimers('[{"id":"inventada","endsAfterRound":3}]')).toEqual([]);
+    expect(parseStoredTimers('[{"id":"poisoned"}]')).toEqual([]);
+    expect(parseStoredTimers('[{"id":"poisoned","endsAfterRound":3}]')).toEqual([
+      { id: 'poisoned', endsAfterRound: 3 },
+    ]);
   });
 });

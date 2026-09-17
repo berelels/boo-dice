@@ -30,5 +30,6 @@ export * from './dm/migrations.js';
 export * from './dm/encounters.js';
 export * from './dm/notes.js';
 export * from './dm/monsterActions.js';
+export * from './dm/conditionTimers.js';
 
 export * from './sync/protocol.js';
